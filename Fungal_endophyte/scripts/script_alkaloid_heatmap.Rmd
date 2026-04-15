@@ -1,0 +1,310 @@
+---
+title: "Construction and basic editing of the phylogenetic trees assessing _Epichloë_ specimens"
+author: "Sotomayor-Alge, Alba"
+date: "05-26-2025"
+output:
+  bookdown::pdf_book:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+    highlight: tango
+    latex_engine: xelatex
+    keep_tex: false
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+# Working session setup
+
+```{r Load packages into working session}
+
+# Function to silently load packages without warnings or messages
+load_packages <- function(pkgs) {
+  invisible(
+    lapply(pkgs, function(pkg) {
+      suppressWarnings(
+        suppressMessages(
+          if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+            stop(paste("❌ Package not found:", pkg), call. = FALSE)
+          }
+        )
+      )
+    })
+  )
+}
+
+# Vector of required packages
+packages_needed <- c("tidyverse")
+
+# Call the function to load them
+load_packages(packages_needed)
+
+```
+
+```{r Working session information}
+
+# Print the information of the working session in order to ensure reproducibility
+sessionInfo()
+
+```
+
+```{r Create directories}
+
+# Create directories within the file system to save the results of the analyses
+dir.create("G:/ESPORAS_SPCOMP/outputs_script3", recursive = TRUE, showWarnings = FALSE)
+
+```
+
+
+# Obtaining the heatmap for alkaloids PCR data
+
+```{r Load alkaloids PCR dataset and transform it}
+
+# Load the dataset
+alkaloid_pcr <- read.table("G:/ESPORAS_SPCOMP/ALKALOIDS/alkaloids_PCR.csv",
+                            sep = ";", header = TRUE)
+
+# Declare Metadata columns to extract them before transformation
+meta_cols_pcr <- c("Hostsp", "IndividualID", "SampleID", "E")
+
+# Save the original order of the dataset
+sample_order_pcr <- alkaloid_pcr$SampleID
+gene_order_pcr <- colnames(alkaloid_pcr)[!(colnames(alkaloid_pcr) %in%
+                  c("Hostsp","IndividualID","SampleID","E"))]
+
+# Transform dataset to long format
+alkaloid_pcr_lng <- alkaloid_pcr %>%
+  pivot_longer(-all_of(meta_cols_pcr),
+               names_to = "Gene",
+               values_to = "Value") %>%
+  mutate(Value = factor(Value, levels = c("-", "+")))
+
+# Establish original order
+alkaloid_pcr_lng$SampleID <- factor(alkaloid_pcr_lng$SampleID, 
+                                    levels = sample_order_pcr)
+alkaloid_pcr_lng$Gene<- factor(alkaloid_pcr_lng$Gene, 
+                                    levels = rev(gene_order_pcr))
+
+```
+
+```{r Plot heatmap with alkaloid PCR data}
+
+# Set output directory
+out_dir_heat <- "G:/ESPORAS_SPCOMP/outputs_script3"
+
+# Draw the heatmap
+heatmap_pcr <- ggplot(alkaloid_pcr_lng, aes(x = SampleID, y = Gene)) +
+  geom_tile(fill = "white", color = "grey", linewidth = 0.3) +
+  geom_text(aes(label = Value, color = Value), size = 4, fontface = "bold") +
+  scale_color_manual(values = c("+" = "#2E8B57", "-" = "#8B0000")) +
+  scale_x_discrete(position = "top") +
+  coord_fixed(ratio = 0.50) +
+  theme_classic() +
+  theme(
+    axis.title = element_blank(),
+    axis.text.x = element_text(size = 5, angle = 90, vjust = 0.5),
+    axis.text.y = element_text(size = 4),
+    legend.position = "none",
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.4),
+    plot.margin = margin(2, 2, 2, 2)  # less inner margins
+  )
+
+# Save the heatmap into a PDF file (A4 landscape -> more width => wider rectangles)
+ggsave(filename = file.path(out_dir_heat, "heatmap_alkaloids_PCR.pdf"), 
+       plot = heatmap_pcr, width = 11.14, height = 8.27, units = "in")
+
+```
+
+\newpage
+
+# Obtaining the heatmap for alkaloids qualitative data
+
+```{r Load alkaloids qualitative dataset and transform it}
+
+# Load the dataset
+alkaloid_data <- read.table("G:/ESPORAS_SPCOMP/ALKALOIDS/alkaloids_qualitative.csv",
+                            sep = ";", header = TRUE)
+
+# Declare Metadata columns to extract them before transformation
+meta_cols <- c("Hostsp", "IndividualID", "SampleID", "E")
+
+# Save the original order of the dataset
+sample_order <- alkaloid_data$SampleID
+compound_order <- colnames(alkaloid_data)[!(colnames(alkaloid_data) %in%
+                  c("Hostsp","IndividualID","SampleID","E"))]
+
+# Transform dataset to long format
+alkaloid_lng <- alkaloid_data %>%
+  pivot_longer(-all_of(meta_cols),
+               names_to = "Compound",
+               values_to = "Value") %>%
+  mutate(Value = factor(Value, levels = c("NO", "TRACES", "YES")))
+
+# Establish original order
+alkaloid_lng$SampleID <- factor(alkaloid_lng$SampleID, levels = sample_order)
+alkaloid_lng$Compound <- factor(alkaloid_lng$Compound, levels = rev(compound_order))
+
+```
+
+```{r Plot heatmap with alkaloid qualitative data}
+
+# Set output directory
+out_dir_heat <- "G:/ESPORAS_SPCOMP/outputs_script3"
+
+# Define the colours that are going to be used in the heatmap
+cols_heatmap <- c("NO" = "#D9D9D9", "TRACES" = "#F0C419", "YES" = "#0072B4")
+
+# Draw the heatmap
+heatmap <- ggplot(alkaloid_lng, aes(x = SampleID, y = Compound, fill = Value)) +
+  geom_tile(color = "white", linewidth = 0.3) +
+  scale_fill_manual(values = cols_heatmap, drop = FALSE) +
+  scale_x_discrete(position = "top") +
+  coord_fixed(ratio = 0.50) +
+  theme_classic() +
+  theme(
+    axis.title = element_blank(),
+    axis.text.x = element_text(size = 5, angle = 90, vjust = 0.5),
+    axis.text.y = element_text(size = 4),
+    legend.position = "none",
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.4),
+    plot.margin = margin(2, 2, 2, 2)  # less inner margins
+  )
+
+# Save the heatmap into a PDF file (A4 landscape -> more width => wider rectangles)
+ggsave(filename = file.path(out_dir_heat, "heatmap_alkaloids_qual.pdf"), 
+       plot = heatmap, width = 11.69, height = 8.27, units = "in")
+
+```
+
+```{r}
+library(FactoMineR)
+library(factoextra)
+library(dplyr)
+
+# Seleccionar solo variables de compuestos
+alkaloid_cat <- alkaloid_data %>%
+  select(-all_of(meta_cols)) %>%
+  mutate(across(everything(), as.factor))
+
+# MCA
+mca_res <- MCA(alkaloid_cat, graph = FALSE)
+
+# Asegurar que Hostsp es factor
+host_factor <- as.factor(alkaloid_data$Hostsp)
+
+# Plot
+fviz_mca_ind(mca_res,
+             habillage = host_factor,
+             addEllipses = TRUE,
+             palette = "jco",
+             repel = TRUE)
+mca_res$var$contrib
+
+library(dplyr)
+library(vegan)
+
+# Load the dataset
+alkaloid_data <- read.table(
+  "G:/ESPORAS_SPCOMP/ALKALOIDS/alkaloids_qualitative.csv",
+  sep = ";",
+  header = TRUE,
+  stringsAsFactors = FALSE
+)
+
+library(dplyr)
+library(vegan)
+
+# Metadata columns
+meta_cols <- c("Hostsp", "IndividualID", "SampleID", "E")
+
+# Save original order
+sample_order <- alkaloid_data$SampleID
+compound_order <- colnames(alkaloid_data)[!(colnames(alkaloid_data) %in% meta_cols)]
+
+# Recode qualitative values to numeric
+data_num <- alkaloid_data %>%
+  mutate(
+    across(
+      -any_of(meta_cols),
+      ~ case_when(
+          trimws(toupper(as.character(.x))) == "NO" ~ 0,
+          trimws(toupper(as.character(.x))) %in% c("TRACE", "TRACES") ~ 1,
+          trimws(toupper(as.character(.x))) == "YES" ~ 2,
+          TRUE ~ NA_real_
+        )
+    )
+  )
+
+# Keep only compound columns
+nmds_input <- data_num %>%
+  select(-any_of(meta_cols)) %>%
+  mutate(across(everything(), as.numeric))
+
+# Check problematic rows
+rows_with_na <- rowSums(is.na(nmds_input)) > 0
+empty_rows   <- rowSums(nmds_input, na.rm = TRUE) == 0
+
+# Keep only complete and non-empty rows
+keep_rows <- !rows_with_na & !empty_rows
+
+nmds_input_clean <- nmds_input[keep_rows, , drop = FALSE]
+meta_clean <- alkaloid_data[keep_rows, , drop = FALSE]
+
+# Assign row names after filtering
+rownames(nmds_input_clean) <- meta_clean$SampleID
+
+# Run NMDS
+set.seed(123)
+nmds <- metaMDS(
+  nmds_input_clean,
+  distance = "gower",
+  autotransform = FALSE,
+  trymax = 200
+)
+
+# Plot
+plot(nmds, type = "t")
+adonis2(nmds_input ~ Hostsp, data = data_num, method = "gower")
+
+
+library(vegan)
+
+# Distancia (coherente con lo anterior)
+dist_mat <- vegdist(nmds_input_clean, method = "gower")
+
+# Clustering jerárquico
+hc <- hclust(dist_mat, method = "average")  # UPGMA
+
+plot(hc, labels = meta_clean$SampleID, main = "Hierarchical clustering")
+
+# Filtrar filas que NO sean Farun
+keep <- meta_clean$Hostsp != "Farun"
+
+nmds_noFarun <- nmds_input_clean[keep, , drop = FALSE]
+meta_noFarun <- meta_clean[keep, , drop = FALSE]
+
+# Recalcular distancia
+dist_mat <- vegdist(nmds_noFarun, method = "gower")
+
+# Clustering
+hc <- hclust(dist_mat, method = "average")
+
+# Plot
+plot(hc, labels = meta_noFarun$SampleID,
+     main = "Hierarchical clustering (sin Farun)")
+
+```
+
+```{r End of script}
+
+# Message announcing the end of the script and where to find the output files
+cat("\n✅ Script executed successfully.\n\nAll output files are available in 'FrothEpi_Github/Fungal_endophyte/data/outputs_script#3 \nwithin the GitHub repository downloaded by the user.\n")
+
+CAMBIA ESTOOO!!!!!
+
+```

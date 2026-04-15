@@ -1,0 +1,47 @@
+>>> Mixed-effects model: GR ~ Species + (1 | Species:Ind) <<<
+
+Type III Analysis of Variance Table with Satterthwaite's method
+         Sum Sq  Mean Sq NumDF DenDF F value    Pr(>F)    
+Species 0.25221 0.063051     4    10  17.636 0.0001587 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Post-hoc test (Tukey):
+$emmeans
+ Species emmean    SE df lower.CL upper.CL
+ Farun    0.331 0.164 10  -0.0343    0.696
+ Fnigr    1.985 0.164 10   1.6193    2.350
+ Fprui    0.897 0.164 10   0.5317    1.262
+ Froth    1.730 0.164 10   1.3644    2.095
+ Fyves    1.679 0.164 10   1.3135    2.044
+
+Degrees-of-freedom method: kenward-roger 
+Confidence level used: 0.95 
+
+$contrasts
+ contrast      estimate    SE df t.ratio p.value
+ Farun - Fnigr  -1.6537 0.232 10  -7.134  0.0002
+ Farun - Fprui  -0.5660 0.232 10  -2.442  0.1811
+ Farun - Froth  -1.3987 0.232 10  -6.034  0.0009
+ Farun - Fyves  -1.3478 0.232 10  -5.814  0.0012
+ Fnigr - Fprui   1.0877 0.232 10   4.692  0.0059
+ Fnigr - Froth   0.2550 0.232 10   1.100  0.8030
+ Fnigr - Fyves   0.3059 0.232 10   1.320  0.6864
+ Fprui - Froth  -0.8327 0.232 10  -3.592  0.0313
+ Fprui - Fyves  -0.7818 0.232 10  -3.373  0.0441
+ Froth - Fyves   0.0509 0.232 10   0.220  0.9994
+
+Degrees-of-freedom method: kenward-roger 
+P value adjustment: tukey method for comparing a family of 5 estimates 
+
+
+
+>>> Random-effects variance (Isolate within Species) <<<
+
+ Groups      Name        Std.Dev.
+ Species:Ind (Intercept) 0.281796
+ Residual                0.059793
+
+
+ICC (proportion of variance due to isolates within species):
+[1] 0.9569177

@@ -1,0 +1,1937 @@
+---
+title: "Comparative analysis of asexual structures morphology and culture growth in _Epichloë_"
+author: "Sotomayor-Alge, Alba"
+date: "02-02-2026"
+output:
+  bookdown::pdf_book:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+    highlight: tango
+    latex_engine: xelatex
+    keep_tex: true
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Working session setup
+
+```{r Load packages into working session}
+
+# Function to silently load packages without warnings or messages
+load_packages <- function(pkgs) {
+  invisible(
+    lapply(pkgs, function(pkg) {
+      suppressWarnings(
+        suppressMessages(
+          if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+            stop(paste("❌ Package not found:", pkg), call. = FALSE)
+          }
+        )
+      )
+    })
+  )
+}
+
+# Vector of required packages
+packages_needed <- c("dplyr", "tidyr", "ggplot2", "knitr", "ggcorrplot", "vegan", 
+                     "coin", "FactoMineR", "factoextra", "patchwork", "MASS", 
+                     "caret", "lme4", "lmerTest", "emmeans", "openxlsx", "rlang",
+                     "performance", "stringr", "multcompView", "multcomp"
+)
+
+# Call the function to load them
+load_packages(packages_needed)
+
+```
+
+```{r Working session information}
+
+# Print the information of the working session in order to ensure reproducibility
+sessionInfo()
+
+```
+
+\newpage
+
+```{r Create directories and exporting function}
+
+# Create directories within the file system to save the results of the analyses
+dir.create("G:/ESPORAS_SPCOMP/outputs_script1", recursive = TRUE, showWarnings = FALSE)
+dir.create("G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset", recursive = TRUE, 
+           showWarnings = FALSE)
+dir.create("G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset/1_EDA", recursive = TRUE, 
+           showWarnings = FALSE)
+dir.create(".G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset/2_STAT", recursive = TRUE, 
+           showWarnings = FALSE)
+dir.create("G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset/3_PCA", recursive = TRUE, 
+           showWarnings = FALSE)
+dir.create("G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset/4_LDA", recursive = TRUE, 
+           showWarnings = FALSE)
+dir.create("G:/ESPORAS_SPCOMP/outputs_script1/2_Culture_growth_dataset", recursive = TRUE, 
+           showWarnings = FALSE)
+
+# Helper function to add and format sheets of excel files created in this script
+add_formatted_sheet <- function(wb, sheet_name, data) {
+  addWorksheet(wb, sheet_name)
+  writeData(wb, sheet = sheet_name, x = data)
+
+  # Define styles
+  style_text <- createStyle(
+    border = "TopBottomLeftRight",
+    halign = "center",
+    valign = "center"
+  )
+  style_integer <- createStyle(
+    border = "TopBottomLeftRight",
+    halign = "center",
+    valign = "center",
+    numFmt = "0"
+  )
+  style_decimal <- createStyle(
+    border = "TopBottomLeftRight",
+    halign = "center",
+    valign = "center",
+    numFmt = "#,##0.000"
+  )
+
+  # Apply style to each column individually
+  for (colname in names(data)) {
+    col_index <- which(names(data) == colname)
+    column_data <- data[[colname]]
+
+    if (is.numeric(column_data)) {
+      if (is.integer(column_data)) {
+        # True integer
+        addStyle(wb, sheet = sheet_name, style = style_integer,
+                 rows = 1:(nrow(data) + 1), cols = col_index, gridExpand = TRUE)
+      } else {
+        # Numeric (with decimals)
+        addStyle(wb, sheet = sheet_name, style = style_decimal,
+                 rows = 1:(nrow(data) + 1), cols = col_index, gridExpand = TRUE)
+      }
+    } else {
+      # Non-numeric columns
+      addStyle(wb, sheet = sheet_name, style = style_text,
+               rows = 1:(nrow(data) + 1), cols = col_index, gridExpand = TRUE)
+    }
+  }
+
+  # Adjust column widths
+  setColWidths(wb, sheet = sheet_name, cols = 1:ncol(data), widths = "auto")
+}
+
+```
+
+\newpage
+
+# Morphological analisys of the asexual reproductive structures (conidia and conidiophores) of _Epichloë_ endophytes
+
+## Load, explore & mutate data set
+
+```{r Data set load, exploration and mutation}
+
+# Load data set considering its inner structure
+spores_data <- read.table("G:/ESPORAS_SPCOMP/MORPHOLOGY/spores_dataset_spcomp_final.csv",
+                          dec = ",", sep = ";", header = TRUE)
+
+# Sanity check. Ensures that all required columns are present before the analysis 
+# continues. If any required column is missing, execution stops with an error message.
+required_cols <- c("Species","SampleID","Ind","Rep","conidL","conidW","conidiophL",
+                   "conidiophW","conidA")
+missing <- setdiff(required_cols, colnames(spores_data))
+if (length(missing) > 0) stop("Missing columns: ", paste(missing, collapse=", "))
+
+# Convert categorical variables to factors and create PlateID from Ind × Rep
+spores_data <- spores_data %>%
+               mutate(Species = as.factor(Species), SampleID = as.factor(SampleID),
+                      Ind = as.factor(Ind), Rep = as.factor(Rep),
+                      PlateID = interaction(Ind, Rep, drop = TRUE))
+
+# Create data set containing excluding the outgroup species (Farun)
+spores_data_ingroup <- spores_data %>% filter(Species != "Farun")
+
+# Add conidial L/W ratio (shape metric)
+spores_data <- spores_data %>%
+               mutate(conidLW = ifelse(is.na(conidW) | conidW == 0, NA_real_, 
+                                       conidL / conidW))
+
+spores_data_ingroup <- spores_data_ingroup %>%
+                       mutate(conidLW = ifelse(is.na(conidW) | conidW == 0, NA_real_, 
+                                               conidL / conidW))
+
+# Define morphological variables used in analyses and select variables for PCA
+morpho_vars_all <- c("conidL","conidW","conidiophL","conidiophW","conidA", "conidLW")
+morpho_vars_stats <- c("conidL","conidW","conidiophL","conidiophW","conidA")
+morpho_vars_permpca <- c("conidL","conidW","conidiophL","conidiophW")
+
+# Create aggregated data sets: (1) plate-level means (biological/technical replicate)
+# and (2) isolate-level means (biological isolate)
+plate_means <- spores_data %>%
+               group_by(Species, Ind, Rep) %>%
+               summarise(across(all_of(morpho_vars_all), ~mean(.x, na.rm = TRUE)),
+               .groups = "drop")
+plate_means_ingroup <- spores_data_ingroup %>%
+               group_by(Species, Ind, Rep) %>%
+               summarise(across(all_of(morpho_vars_all), ~mean(.x, na.rm = TRUE)),
+               .groups = "drop")
+ind_means <- plate_means %>%
+             group_by(Species, Ind) %>%
+             summarise(across(all_of(morpho_vars_all), ~mean(.x, na.rm = TRUE)),
+             .groups = "drop")
+ind_means_ingroup <- plate_means_ingroup %>%
+             group_by(Species, Ind) %>%
+             summarise(across(all_of(morpho_vars_all), ~mean(.x, na.rm = TRUE)),
+             .groups = "drop")
+
+```
+
+Before continuing with the analyses, the existence of outliers is assessed applying the IQR method.
+
+```{r Outliers removal (IQR method)}
+
+# Identify IQR-based outliers per morphological variable (flag only, no deletion)
+# considering the data set that includes only E. festucae.
+flag_outliers_iqr <- function(x) {
+  q1 <- quantile(x, 0.25, na.rm = TRUE)
+  q3 <- quantile(x, 0.75, na.rm = TRUE)
+  iqr <- q3 - q1
+  lower <- q1 - 1.5*iqr
+  upper <- q3 + 1.5*iqr
+  (x < lower) | (x > upper)
+}
+
+spores_data_flagged <- spores_data_ingroup
+for (v in morpho_vars_all) {
+  spores_data_flagged[[paste0(v, "_out")]] <- flag_outliers_iqr(spores_data_flagged[[v]])
+}
+
+# Summary table with the number of outliers per morphological variable
+outlier_summary <- sapply(paste0(morpho_vars_all, "_out"),
+                          function(v) sum(spores_data_flagged[[v]], na.rm = TRUE))
+
+# As the number of outliers is quite low, all observations were kept for the following statistical
+# analysis.
+print(outlier_summary)
+
+```
+Given the low number of detected outliers, all observations were retained for the subsequent statistical analyses.
+
+\newpage
+
+## Exploratory Data Analysis (EDA)
+
+### Graphic approach
+
+```{r Visualize data distribution}
+
+# Set output directory for exploratory boxplots
+out_dir_eda <- "G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset/1_EDA/"
+dir.create(out_dir_eda, recursive = TRUE, showWarnings = FALSE)
+
+# Define colors for the study
+species_col_ingroup <- c(Ftrich = "#e6ab02", Flamb = "#d95f02", Fyves = "#e72945",
+                         Froth = "#283F79", Fnigr = "#1b9d99", Fprui = "#66a61e")
+species_col <- c(Ftrich = "#e6ab02", Flamb = "#d95f02", Fyves = "#e72945",
+                 Froth = "#283F79", Fnigr = "#1b9d99", Fprui = "#66a61e",
+                 Farun = "#666666")
+
+# Fix species order within the boxplots
+spores_data_ingroup$Species <- factor(spores_data_ingroup$Species,
+                                      levels = names(species_col_ingroup))
+spores_data$Species <- factor(spores_data$Species,
+                              levels = names(species_col))
+
+# Create boxplots (considering only E. festucae)
+for (v in morpho_vars_all) {
+  p <- ggplot(spores_data_ingroup,
+              aes(x = Species, y = .data[[v]], fill = Species)) +
+       geom_boxplot(outlier.shape = NA,
+                    width = 0.6,
+                    alpha = 0.7,
+                    linewidth = 0.3,
+                    coef = 0,
+                    col = "black") +
+       stat_boxplot(geom = "errorbar",
+                    width = 0.15,
+                    linewidth = 0.25,
+                    linetype = "dashed",
+                    col = "black") +
+       scale_fill_manual(values = species_col_ingroup) +
+       theme_bw() +
+       theme(panel.grid = element_blank()) +
+       theme(legend.position = "none", axis.title.x = element_blank()) +
+       ylab(v)
+  ggsave(filename = file.path(out_dir_eda, paste0("boxplot_Ingroup_", v, ".pdf")),
+         plot = p, width = 5, height = 4, units = "in")
+}
+
+
+# Create boxplots (considering all species)
+for (v in morpho_vars_all) {
+  p_allsp <- ggplot(spores_data,
+          aes(x = Species, y = .data[[v]], fill = Species)) +
+          geom_boxplot(outlier.shape = NA,
+                       width = 0.6,
+                       alpha = 0.7,
+                       linewidth = 0.3,
+                       coef = 0,
+                       col = "black") +
+          stat_boxplot(geom = "errorbar",
+                       width = 0.15,
+                       linewidth = 0.25,
+                       linetype = "dashed",
+                       col = "black") +
+          scale_fill_manual(values = species_col) +
+          theme_bw() +
+          theme(panel.grid = element_blank()) +
+          theme(legend.position = "none", axis.title.x = element_blank()) +
+          ylab(v)
+  ggsave(filename = file.path(out_dir_eda, paste0("boxplot_AllSpecies_", v, ".pdf")),
+         plot = p_allsp, width = 5, height = 4, units = "in")
+}
+
+```
+
+\newpage
+
+### Basic statistics
+
+```{r Basic statistics}
+
+# Function for calculating basic statistics
+BasicStatsGroupedLong <- function(data, group_vars, numeric_vars) {
+  stats_long <- lapply(numeric_vars, function(var) {
+    data %>%
+      group_by(across(all_of(group_vars))) %>%
+      summarise(n = as.integer(sum(!is.na(.data[[var]]))),
+                Mean = mean(.data[[var]], na.rm = TRUE),
+                Median = median(.data[[var]], na.rm = TRUE),
+                SD = sd(.data[[var]], na.rm = TRUE),
+                CV = ifelse(mean(.data[[var]], na.rm = TRUE) == 0, NA_real_,
+                            sd(.data[[var]], na.rm = TRUE) / mean(.data[[var]], 
+                                                                  na.rm = TRUE) * 100),
+                Q1 = quantile(.data[[var]], 0.25, na.rm = TRUE),
+                Q3 = quantile(.data[[var]], 0.75, na.rm = TRUE),
+                IQR = IQR(.data[[var]], na.rm = TRUE),
+                Min = min(.data[[var]], na.rm = TRUE),
+                Max = max(.data[[var]], na.rm = TRUE),
+                .groups = "drop") %>%
+      mutate(Variable = var)}) %>%
+      bind_rows() %>%
+      relocate(Variable)
+
+  return(stats_long)
+}
+
+# Statistics at species level
+species_stats <- BasicStatsGroupedLong(spores_data, group_vars = "Species", 
+                                       numeric_vars = morpho_vars_stats) %>%
+  mutate(across(where(is.double), ~ round(.x, 3)))
+
+# Statistics at individual/isolate level
+ind_stats <- BasicStatsGroupedLong(spores_data, group_vars = c("Species", "Ind"), 
+                                   numeric_vars = morpho_vars_stats) %>%
+  mutate(across(where(is.double), ~ round(.x, 3)))
+
+# Statistics at replicate level
+rep_stats <- BasicStatsGroupedLong(spores_data, group_vars = c("Species", "Ind", "Rep"), 
+                                   numeric_vars = morpho_vars_stats) %>%
+  mutate(across(where(is.double), ~ round(.x, 3)))
+
+# Export results to an excel file
+wb_stats <- createWorkbook()
+add_formatted_sheet(wb_stats, "Species_stats", species_stats)
+add_formatted_sheet(wb_stats, "Ind_stats", ind_stats)
+add_formatted_sheet(wb_stats, "Rep_stats", rep_stats)
+saveWorkbook(wb_stats, file = file.path(out_dir_eda, "basic_stats_Allspecies.xlsx"),
+             overwrite = TRUE)
+
+```
+
+\newpage
+
+### Data distribution 
+
+```{r Check normality of variables}
+
+# Function for conducting normality tests
+ShapiroTestGrouped <- function(data, group_vars, test_vars) {
+    data %>%
+    pivot_longer(cols = all_of(test_vars), names_to = "Variable", 
+                 values_to = "Value") %>%
+    group_by(across(all_of(group_vars)), Variable) %>%
+    summarise(n = sum(!is.na(Value)),
+              statistic = tryCatch(shapiro.test(Value)$statistic,
+                                   error = function(e) NA_real_),
+              p_value = tryCatch(shapiro.test(Value)$p.value, 
+                                 error = function(e) NA_real_),
+              .groups = "drop") %>%
+    mutate(significance = ifelse(p_value > 0.05, "", "***"))
+}
+
+# Test normality considering all aggregation levels
+shapiro_species <- ShapiroTestGrouped(spores_data, "Species", 
+                                      morpho_vars_stats)
+shapiro_ind <- ShapiroTestGrouped(spores_data, 
+                                  group_vars = c("Species", "Ind"), 
+                                  morpho_vars_stats)
+shapiro_rep <- ShapiroTestGrouped(spores_data, 
+                                  group_vars = c("Species", "Ind", "Rep"),
+                                  morpho_vars_stats)
+
+# Create an excel file
+wb_norm <- createWorkbook()
+add_formatted_sheet(wb_norm, "Species_Shapirotest", shapiro_species)
+add_formatted_sheet(wb_norm, "Ind_Shapirotest", shapiro_ind)
+add_formatted_sheet(wb_norm, "Rep_Shapirotest", shapiro_rep)
+saveWorkbook(wb_norm, file = file.path(out_dir_eda, "normality_tests.xlsx"),
+             overwrite = TRUE)
+
+```
+
+\newpage
+
+### Correlation among morphological variables
+
+```{r Check correlation among variables}
+
+# Create an object containing only all morphological variables
+morpho_data_stats <- spores_data[,c(5,6,7,8,9)]
+
+# Compute correlation matrix (using pairwise complete obs)
+correlation_matrix <- as.data.frame(cor(morpho_data_stats, use = "complete.obs"))
+
+# Create workbook
+wb_corr <- createWorkbook()
+
+# Add formatted sheets using existing add_formatted_sheet() function
+add_formatted_sheet(wb_corr, "correlation_matrix", correlation_matrix)
+
+# Save excel file with the results
+saveWorkbook(wb_corr, file = file.path(out_dir_eda, "correlation_tests.xlsx"),
+             overwrite = TRUE)
+
+```
+
+\newpage
+
+## Statistical analysis
+
+### GLOBAL PERMANOVA 
+
+```{r PERMANOVA analysis for E. festucae}
+
+# Select only the species with n >= 2 for conducting the statistical analyses
+isolates_per_species <- spores_data_ingroup %>%
+  distinct(Species, Ind) %>%
+  count(Species, name = "n_isolates") %>%
+  arrange(Species)
+
+valid_species <- isolates_per_species %>%
+  filter(n_isolates >= 2) %>%
+  pull(Species)
+
+# Create data sets including only species with two or more isolates for conducting 
+# the statistics
+spores_pairwise <- spores_data_ingroup %>%
+  filter(Species %in% valid_species) %>%
+  droplevels()
+
+plate_means_pairwise <- plate_means_ingroup %>%
+  filter(Species %in% valid_species) %>%
+  droplevels()
+
+ind_means_pairwise <- ind_means_ingroup %>%
+  filter(Species %in% valid_species) %>%
+  droplevels()
+
+# Scale the data sets before conducting the analyses
+X_spores<- spores_pairwise %>% dplyr::select(all_of(morpho_vars_permpca))
+X_spores_scaled <- scale(X_spores)
+spores_pairwise_scaled <- spores_pairwise %>%
+  dplyr::select(Species, Ind) %>%
+  bind_cols(as.data.frame(X_spores_scaled))
+
+X_plate <- plate_means_pairwise %>% dplyr::select(all_of(morpho_vars_permpca))
+X_plate_scaled <- scale(X_plate)
+plate_means_pairwise_scaled <- plate_means_pairwise %>%
+  dplyr::select(Species, Ind) %>%
+  bind_cols(as.data.frame(X_plate_scaled))
+
+X_ind <- ind_means_pairwise %>% dplyr::select(all_of(morpho_vars_permpca))
+X_ind_scaled <- scale(X_ind)
+ind_means_pairwise_scaled <- ind_means_pairwise %>%
+  dplyr::select(Species, Ind) %>%
+  bind_cols(as.data.frame(X_ind_scaled))
+
+# Summarize n for the three data sets that are going to be included
+n_summary <- data.frame(
+  Level = c("Spore", "Plate", "Isolate"),
+  N_rows = c(nrow(spores_pairwise), nrow(plate_means_pairwise), 
+             nrow(ind_means_pairwise)),
+  N_species = c(n_distinct(spores_pairwise$Species),
+                n_distinct(plate_means_pairwise$Species),
+                n_distinct(ind_means_pairwise$Species)),
+  N_isolates = c(n_distinct(spores_pairwise$Ind),
+                 n_distinct(plate_means_pairwise$Ind),
+                 n_distinct(ind_means_pairwise$Ind)))
+print(n_summary)
+
+
+# Create function PERMANOVA + PERMDISP (using standardized traits)
+run_permanova_level <- function(df, level_name, response_vars, strata_var = NULL) {
+  df <- df %>%
+    dplyr::select(all_of(c(response_vars, "Species", strata_var))) %>%
+    tidyr::drop_na()
+  X  <- df %>% dplyr::select(all_of(response_vars))
+  Xs <- scale(X)
+  grp <- df$Species
+  perm <- adonis2( Xs ~ grp, permutations = 10000, method = "euclidean",
+    strata = if(!is.null(strata_var)) df[[strata_var]] else NULL)
+  disp <- betadisper(dist(Xs), grp)
+  disp_test <- permutest(disp, permutations = 10000)
+  list(level = level_name,
+       N = nrow(df),
+       n_groups = nlevels(grp),
+       permanova = perm,
+       permdisp = disp_test)
+}
+
+# Set seed to improve reproducibility
+set.seed(8888)
+
+# Run PERMANOVA at the three levels
+res_spore <- run_permanova_level(spores_pairwise_scaled, "Spore-level (exploratory)", 
+                                 morpho_vars_permpca, strata_var = "Ind")
+res_plate <- run_permanova_level(plate_means_pairwise_scaled, "Plate-level (exploratory)", 
+                                 morpho_vars_permpca, strata_var = "Ind")
+res_isolate <- run_permanova_level(ind_means_pairwise_scaled, "Isolate-level (Main result)", 
+                                   morpho_vars_permpca, strata_var = NULL)
+
+# Print full outputs (GLOBAL PERMANOVA + PERMDISP)
+cat("\n\n===== SPORE-LEVEL =====\n")
+print(res_spore$permanova)
+cat("\nPERMDISP:\n")
+print(res_spore$permdisp)
+
+cat("\n\n===== PLATE-LEVEL =====\n")
+print(res_plate$permanova)
+cat("\nPERMDISP:\n")
+print(res_plate$permdisp)
+
+cat("\n\n===== ISOLATE-LEVEL =====\n")
+print(res_isolate$permanova)
+cat("\nPERMDISP:\n")
+print(res_isolate$permdisp)
+
+
+# Build a compact summary table
+extract_perm_summary <- function(res_obj) {
+  perm <- res_obj$permanova
+  disp <- res_obj$permdisp  # ahora es permutest(disp)
+  disp_tab <- disp$tab
+  f_col <- intersect(c("F", "F value", "F.Model", "F statistic"), colnames(disp_tab))[1]
+  p_col <- intersect(c("Pr(>F)", "Pr(>F)", "p", "p.value"), colnames(disp_tab))[1]
+  data.frame(Level = res_obj$level,
+             N = res_obj$N,
+             Groups = res_obj$n_groups,
+             Df_model = perm$Df[1],
+             Df_resid = perm$Df[2],
+             R2 = perm$R2[1],
+             F = perm$F[1],
+             p_value = perm$`Pr(>F)`[1],
+             PERMDISP_F = if (!is.na(f_col)) disp_tab[1, f_col] else NA_real_,
+             PERMDISP_p = if (!is.na(p_col)) disp_tab[1, p_col] else NA_real_,
+             row.names = NULL)
+}
+
+perm_summary <- dplyr::bind_rows(extract_perm_summary(res_spore),
+                                 extract_perm_summary(res_plate),
+                                 extract_perm_summary(res_isolate))
+
+# Save outputs of the main result (valid statistical inference)
+out_dir_stats <- "G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset/2_STAT"
+dir.create(out_dir_stats, recursive = TRUE, showWarnings = FALSE)
+write.csv2(perm_summary, file.path(out_dir_stats, "GLOBALPERM_summary.csv"), row.names = FALSE)
+sink("G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset/2_STAT/GLOBALPERM_model.txt", split = FALSE)
+print(res_isolate$permanova)
+sink()
+
+```
+
+\newpage
+
+### PAIRWISE PERMUTATION TEST (isolate level)
+
+```{r Pairwise permutation tests}
+
+# Create the function for pairwise PERMANOVA comparisons
+pairwise_adonis2 <- function(df_scaled, response_vars, group_var = "Species",
+                             permutations = 10000, method = "euclidean",
+                             p_adj = "holm", check_dispersion = TRUE) {
+
+  df_scaled[[group_var]] <- droplevels(as.factor(df_scaled[[group_var]]))
+  lvls <- levels(df_scaled[[group_var]])
+  pairs <- combn(lvls, 2, simplify = FALSE)
+  
+  out <- lapply(pairs, function(p) {
+    sub <- df_scaled %>% dplyr::filter(.data[[group_var]] %in% p)
+    X <- sub %>% dplyr::select(all_of(response_vars))
+    g <- droplevels(sub[[group_var]])
+    D <- dist(X, method = "euclidean")
+    perm <- adonis2(D ~ g, permutations = permutations)
+    ns <- table(g)
+    n1 <- unname(ns[1]); n2 <- unname(ns[2])
+    disp_p <- NA_real_
+    disp_F <- NA_real_
+    if (check_dispersion) {
+      bd <- betadisper(D, g)
+      bt <- permutest(bd, permutations = permutations)
+      disp_F <- bt$tab[1, "F"]
+      disp_p <- bt$tab[1, "Pr(>F)"]
+    }
+
+    data.frame(Comparison = paste(p[1], "vs", p[2]),
+               n1 = n1, n2 = n2,
+               Df = perm$Df[1],
+               R2 = perm$R2[1],
+               F = perm$F[1],
+               p_value = perm$`Pr(>F)`[1],
+               PERMDISP_F = disp_F,
+               PERMDISP_p = disp_p,
+               stringsAsFactors = FALSE)
+  })
+
+  dplyr::bind_rows(out) %>%
+    dplyr::mutate(p_adj = p.adjust(p_value, method = p_adj)) %>%
+    dplyr::arrange(p_adj)
+}
+
+# Set seed to impreove reproducibility
+set.seed(8888)
+
+# conduct the test at isolate level
+pairwise_res <- pairwise_adonis2(df_scaled = ind_means_pairwise_scaled,
+                                 response_vars = morpho_vars_permpca)
+print(pairwise_res)
+
+# Save the results
+write.csv2(pairwise_res,
+           file = "G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset/2_STAT/PAIRPERM_summary.csv",
+           row.names = FALSE)
+
+```
+
+\newpage
+
+# LLMs for morphological variables (univariate tests)
+
+```{r}
+
+# Set variables and reordering the variables before conducting the analyses and 
+# generating the output file
+ctrl <- lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
+morpho_vars_stats <- c("conidL", "conidW", "conidA", "conidiophL", "conidiophW")
+results <- vector("list", length(morpho_vars_stats))
+names(results) <- morpho_vars_stats
+
+# Conduct the analyses and generate output file
+sink("G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset/2_STAT/LMM_results.txt", 
+     split = FALSE)
+
+cat("===================\n")
+cat("Linear Mixed Models\n")
+cat("===================\n\n")
+
+for (v in morpho_vars_stats) {
+
+  cat("\n=====================\n")
+  cat("Variable:", v, "\n")
+  cat("=====================\n\n")
+
+  f_full <- as.formula(paste0(v, " ~ Species + (1|Ind/Rep)"))
+  f_red  <- as.formula(paste0(v, " ~ Species + (1|Ind)"))
+
+  # Fit full model
+  m_full <- lmer(f_full, data = spores_pairwise, REML = TRUE, control = ctrl)
+  sing_full <- isSingular(m_full, tol = 1e-5)
+
+  # Choose final model
+  if (!sing_full) {
+    m_final <- m_full
+    f_final <- f_full
+    model_label <- "FULL MODEL"
+  } else {
+    m_final <- lmer(f_red, data = spores_pairwise, REML = TRUE, control = ctrl)
+    f_final <- f_red
+    model_label <- "REDUCED MODEL (full model singular)"
+  }
+
+  sing_final <- isSingular(m_final, tol = 1e-5)
+
+  cat("Selected model (R code):\n")
+  cat("m <- lmer(", deparse(f_final), ",\n",
+      "          data = spores_pairwise, REML = TRUE, control = ctrl)\n",
+      sep = "")
+  cat("Model type:", model_label, "\n")
+  cat("isSingular(full)  =", sing_full, "\n")
+  cat("isSingular(final) =", sing_final, "\n\n")
+  cat("\n")
+
+  cat("----- MODEL SUMMARY -----\n")
+  print(summary(m_final))
+  cat("\n\n\n")
+
+  cat("----- MODEL COMPARISON (Null vs Final; LRT) -----\n")
+  m_null <- tryCatch({
+    
+    # Build a null model keeping the SAME random structure as the final model
+    rand_terms <- findbars(formula(m_final))
+    rand_str <- if (length(rand_terms) > 0) {
+      paste(vapply(rand_terms, function(x) paste0("(", deparse(x), ")"), ""), 
+            collapse = " + ")
+    } else {
+      ""
+    }
+    f_null <- if (nzchar(rand_str)) {
+      as.formula(paste0(v, " ~ 1 + ", rand_str))
+    } else {
+      as.formula(paste0(v, " ~ 1"))
+    }
+    lmer(f_null, data = spores_pairwise, REML = FALSE, control = ctrl)
+  }, error = function(e) e)
+
+  lrt_null <- tryCatch({
+    if (inherits(m_null, "error")) stop(m_null$message)
+    anova(m_null, update(m_final, REML = FALSE))
+  }, error = function(e) e)
+
+  if (inherits(lrt_null, "error")) {
+    cat("Null vs Final comparison failed:\n", lrt_null$message, "\n")
+  } else {
+    print(lrt_null)
+  }
+  cat("\n\n\n")
+
+  cat("----- MODEL R2 (marginal / conditional) -----\n")
+  r2_vals <- performance::r2(m_final)
+  print(r2_vals)
+
+  cat("\n\n\n")
+
+  cat("----- ASSUMPTION CHECKS (model performance) -----\n")
+  checks <- tryCatch({
+    list(heteroscedasticity = performance::check_heteroscedasticity(m_final),
+         outliers = performance::check_outliers(m_final))
+  }, error = function(e) e)
+
+  if (inherits(checks, "error")) {
+    cat("performance checks failed:\n", checks$message, "\n")
+  } else {
+  cat("[Heteroscedasticity]\n")
+  print(checks$heteroscedasticity)
+  cat("\n[Outliers]\n")
+  print(checks$outliers)
+  }
+  cat("\n\n\n")
+
+  cat("----- RESIDUAL NORMALITY (Shapiro-Wilk) -----\n")
+  sh <- tryCatch(shapiro.test(resid(m_final)), error = function(e) e)
+  if (inherits(sh, "error")) {
+    cat("Shapiro test failed:\n", sh$message, "\n")
+  } else {
+    print(sh)
+  }
+  cat("\n\n\n")
+
+  # Compute emmeans ONCE, but print later (after pairwise)
+  emm <- tryCatch(emmeans(m_final, ~ Species, lmer.df = "kenward-roger"),
+                  error = function(e) e)
+  
+    cat("----- ANOVA TEST (Kenward–Roger) -----\n")
+  aov_kr <- tryCatch(anova(m_final, ddf = "Kenward-Roger"),
+                     error = function(e) e)
+  if (inherits(aov_kr, "error")) {
+    cat("Kenward–Roger failed:\n", aov_kr$message, "\n")
+  } else {
+    print(aov_kr)
+  }
+  cat("\n\n\n")
+
+   cat("----- PAIRWISE COMPARISONS (Tukey-adjusted) -----\n")
+  if (inherits(emm, "error")) {
+    cat("emmeans failed (so pairwise cannot be computed):\n", emm$message, "\n")
+    pw <- emm
+  } else {
+    pw <- tryCatch(pairs(emm, adjust = "tukey"),
+                   error = function(e) e)
+    if (inherits(pw, "error")) {
+      cat("Tukey test failed:\n", pw$message, "\n")
+    } else {
+      print(pw)
+    }
+  }
+  cat("\n\n\n")
+
+    cat("----- COMPACT LETTER DISPLAY -----\n")
+  cld_res <- tryCatch({
+    if (inherits(emm, "error")) stop("emmeans failed; cannot compute compact letter display.")
+
+    cld_out <- cld(
+      emm,
+      alpha = 0.05,
+      Letters = letters,
+      sort = FALSE
+    )
+
+    as.data.frame(cld_out)
+  }, error = function(e) e)
+
+  if (inherits(cld_res, "error")) {
+    cat("Compact letter display failed:\n", cld_res$message, "\n")
+  } else {
+    print(cld_res)
+  }
+  cat("\n\n\n")
+  
+    cat("----- EFFECT SIZES (Hedges g) -----\n")
+  eff <- tryCatch({
+    if (inherits(emm, "error")) stop("emmeans failed; cannot compute effect sizes.")
+    eff_size(emm, sigma = sigma(m_final), edf = df.residual(m_final))
+  }, error = function(e) e)
+
+  if (inherits(eff, "error")) {
+    cat("Effect sizes failed:\n", eff$message, "\n")
+  } else {
+    print(eff)
+  }
+  cat("\n\n\n")
+
+  cat("----- VARIANCE COMPONENTS & PROPORTIONS -----\n\n")
+
+  vc_df <- as.data.frame(VarCorr(m_final))
+
+  # Keep only group + variance, and aggregate (safe against duplicates)
+  vc2 <- aggregate(vcov ~ grp, data = vc_df, sum)
+
+  # Ensure Residual exists (VarCorr sometimes omits it)
+  if (!"Residual" %in% vc2$grp) {
+   vc2 <- rbind(vc2, data.frame(grp = "Residual", vcov = sigma(m_final)^2))
+  }
+
+  # Desired order
+  desired_order <- c("Ind", "Ind:Rep", "Residual")
+
+  # Keep unexpected levels (don’t convert them to NA)
+  extra_levels <- setdiff(unique(as.character(vc2$grp)), desired_order)
+  level_order  <- c(desired_order, extra_levels)
+
+  vc2$grp <- factor(as.character(vc2$grp), levels = level_order)
+  vc2 <- vc2[order(vc2$grp), , drop = FALSE]
+
+  # compute proportions (THIS WAS MISSING)
+  vc2$Proportion <- vc2$vcov / sum(vc2$vcov)
+
+  # Print table
+  grp_chr <- as.character(vc2$grp)
+  w <- max(nchar(grp_chr), na.rm = TRUE) + 2
+  if (!is.finite(w) || w < 7) w <- 10
+
+  fmt_header <- paste0("%-", w, "s %12s %12s\n")
+  fmt_row    <- paste0("%-", w, "s %12.6f %12.3f\n")
+
+  cat(sprintf(fmt_header, "Level", "Variance", "Proportion"))
+  cat(sprintf(fmt_header, "-----", "--------", "----------"))
+
+  for (i in seq_len(nrow(vc2))) {
+    cat(sprintf(fmt_row, grp_chr[i], vc2$vcov[i], vc2$Proportion[i]))
+  }
+
+  cat("\n\n\n\n")
+
+  
+  # Save diagnostic plots into .jpg files 
+  # Helper: safe filename
+  safe_name <- function(x) gsub("[^A-Za-z0-9_\\-]+", "_", x)
+
+  # Choose image format: "png" or "jpg"
+  img_format <- "jpg"   # you asked for .jpg name
+
+  # Image size (pixels). You can change these.
+  img_width  <- 1600
+  img_height <- 1200
+  img_res    <- 200
+
+  # Function to save diagnostics
+  save_lmm_diagnostics <- function(m_final, var_name, out_dir, format = "jpg",
+                                   width = 1600, height = 1200, res = 200) {
+
+    # Filename per variable (no overwrite)
+    file_path <- file.path(out_dir_stats, paste0(safe_name(var_name), 
+                                                 "_LMM_plots.", format))
+
+    # Open device
+    if (tolower(format) == "png") {
+      png(filename = file_path, width = width, height = height, res = res)
+    } else if (tolower(format) %in% c("jpg", "jpeg")) {
+      jpeg(filename = file_path, width = width, height = height, quality = 95, 
+           res = res)
+    } else {
+      stop("Unsupported format. Use 'png' or 'jpg'.")
+    }
+
+    # Always close device even if an error happens
+    old_par <- par(no.readonly = TRUE)
+    on.exit({
+      par(old_par)
+      dev.off()
+    }, add = TRUE)
+
+    # Diagnostics data
+    resids <- resid(m_final)
+    fits   <- fitted(m_final)
+
+    # 2x2 panel
+    par(mfrow = c(2, 2), mar = c(4.5, 4.5, 3, 1))
+
+    # 1) Residuals vs Fitted
+    plot(fits, resids,
+         xlab = "Fitted values",
+         ylab = "Residuals",
+         main = paste0(var_name, ": Residuals vs Fitted"))
+    abline(h = 0, lty = 2)
+
+    # 2) Normal Q-Q
+    qqnorm(resids, main = paste0(var_name, ": Normal Q-Q"))
+    qqline(resids, lty = 2)
+
+    # 3) Histogram of residuals
+    hist(resids, breaks = 25,
+         main = paste0(var_name, ": Residuals histogram"),
+         xlab = "Residuals")
+
+    # 4) Scale-Location (sqrt(|residuals|) vs fitted)
+    plot(fits, sqrt(abs(resids)),
+         xlab = "Fitted values",
+         ylab = "sqrt(|Residuals|)",
+         main = paste0(var_name, ": Scale-Location"))
+    lines(lowess(fits, sqrt(abs(resids))), lty = 2)
+  }
+
+  # Run and save diagnostics for this variable
+  tryCatch({
+    save_lmm_diagnostics(m_final, v, out_dir_stats,
+                         format = img_format,
+                         width = img_width, height = img_height, res = img_res)
+  }, error = function(e) {
+    cat("Diagnostics plot failed for", v, ":", e$message, "\n")
+  })
+
+
+  # Store results in memory (AFTER objects exist)
+  results[[v]] <- list(
+    formula_full = f_full,
+    formula_final = f_final,
+    model_full = m_full,
+    model_final = m_final,
+    singular_full = sing_full,
+    singular_final = sing_final,
+    anova_KR = aov_kr,
+    emmeans = emm,
+    cld = cld_res
+  )
+}
+
+cat("========================\n")
+cat("End of LMM analysis\n")
+cat("========================\n")
+
+sink()
+
+```
+
+
+```{r LMMs using Log transformation (sensitivity)}
+
+# ============================================================
+# SENSITIVITY ANALYSIS: log-scale LMM (ONLY for selected vars)
+# ============================================================
+
+vars_log_sensitivity <- c("conidW", "conidiophL")
+
+sink("G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset/2_STAT/LMM_log_results.txt", split = TRUE)
+
+
+cat("=============================\n")
+cat("Log-scale sensitivity (LMM)\n")
+cat("=============================\n\n")
+
+for (v in vars_log_sensitivity) {
+
+  cat("\n==============================\n")
+  cat("Variable (log):", v, "\n")
+  cat("==============================\n\n")
+
+  v_log <- paste0("log_", v)
+
+  # Work on a fresh copy per variable (avoids state contamination)
+  spores_pairwise_log <- spores_pairwise
+
+  # Prepare safe log transform (handles zeros/negatives)
+  x <- spores_pairwise_log[[v]]
+  min_x <- suppressWarnings(min(x, na.rm = TRUE))
+
+  if (!is.finite(min_x)) {
+    cat("Log sensitivity skipped: variable has no finite values.\n\n\n")
+    next
+  }
+
+  if (min_x <= 0) {
+    offset <- abs(min_x) + 1e-6
+    cat(sprintf("Transform used: %s = log(%s + %.6g)  [min(%s)=%.6f]\n\n",
+                v_log, v, offset, v, min_x))
+    spores_pairwise_log[[v_log]] <- log(spores_pairwise_log[[v]] + offset)
+  } else {
+    cat(sprintf("Transform used: %s = log(%s)  [min(%s)=%.6f]\n\n",
+                v_log, v, v, min_x))
+    spores_pairwise_log[[v_log]] <- log(spores_pairwise_log[[v]])
+  }
+
+  # Define full/reduced formulas on log-scale
+  f_full_log <- as.formula(paste0(v_log, " ~ Species + (1|Ind/Rep)"))
+  f_red_log  <- as.formula(paste0(v_log, " ~ Species + (1|Ind)"))
+
+  # Fit full model (log)
+  m_full_log <- tryCatch(
+    lmer(f_full_log, data = spores_pairwise_log, REML = TRUE,
+         control = ctrl, na.action = na.omit),
+    error = function(e) e
+  )
+
+  if (inherits(m_full_log, "error")) {
+    cat("Log sensitivity failed (full model):\n", m_full_log$message, "\n\n\n")
+    next
+  }
+
+  sing_full_log <- isSingular(m_full_log, tol = 1e-5)
+
+  # Choose final model (log) mirroring your rule
+  if (!sing_full_log) {
+    m_final_log <- m_full_log
+    f_final_log <- f_full_log
+    model_label_log <- "FULL MODEL (log)"
+  } else {
+    m_final_log <- tryCatch(
+      lmer(f_red_log, data = spores_pairwise_log, REML = TRUE,
+           control = ctrl, na.action = na.omit),
+      error = function(e) e
+    )
+    f_final_log <- f_red_log
+    model_label_log <- "REDUCED MODEL (log; full singular)"
+  }
+
+  if (inherits(m_final_log, "error")) {
+    cat("Log sensitivity failed (final model):\n", m_final_log$message, "\n\n\n")
+    next
+  }
+
+  sing_final_log <- isSingular(m_final_log, tol = 1e-5)
+
+  cat("Selected log model (R code):\n")
+  cat("m_log <- lmer(", deparse(f_final_log), ",\n",
+      "               data = spores_pairwise_log, REML = TRUE,\n",
+      "               control = ctrl, na.action = na.omit)\n",
+      sep = "")
+  cat("Model type:", model_label_log, "\n")
+  cat("isSingular(full_log)  =", sing_full_log, "\n")
+  cat("isSingular(final_log) =", sing_final_log, "\n\n")
+
+  cat("----- LOG MODEL SUMMARY -----\n")
+  print(summary(m_final_log))
+  cat("\n\n")
+
+  # LRT null vs final (log)
+  cat("----- LOG MODEL COMPARISON (Null vs Final; LRT) -----\n")
+
+  m_null_log <- tryCatch({
+
+    rand_terms <- lme4::findbars(formula(m_final_log))
+    rand_str <- if (length(rand_terms) > 0) {
+      paste(vapply(rand_terms, function(x) paste0("(", deparse(x), ")"), ""),
+            collapse = " + ")
+    } else {
+      ""
+    }
+
+    f_null_log <- if (nzchar(rand_str)) {
+      as.formula(paste0(v_log, " ~ 1 + ", rand_str))
+    } else {
+      as.formula(paste0(v_log, " ~ 1"))
+    }
+
+    lmer(f_null_log, data = spores_pairwise_log, REML = FALSE,
+         control = ctrl, na.action = na.omit)
+
+  }, error = function(e) e)
+
+  lrt_log <- tryCatch({
+    if (inherits(m_null_log, "error")) stop(m_null_log$message)
+    anova(m_null_log, update(m_final_log, REML = FALSE))
+  }, error = function(e) e)
+
+  if (inherits(lrt_log, "error")) {
+    cat("Null vs Final (log) comparison failed:\n", lrt_log$message, "\n")
+  } else {
+    print(lrt_log)
+  }
+  cat("\n\n")
+
+ 
+  cat("----- LOG MODEL R2 (marginal / conditional) -----\n")
+  r2_log <- tryCatch(performance::r2(m_final_log), error = function(e) e)
+  if (inherits(r2_log, "error")) {
+    cat("R2 (log) failed:\n", r2_log$message, "\n")
+  } else {
+    print(r2_log)
+  }
+  cat("\n\n")
+
+ 
+  cat("----- LOG ASSUMPTION CHECKS (model performance) -----\n")
+  checks_log <- tryCatch({
+    list(
+      heteroscedasticity = performance::check_heteroscedasticity(m_final_log),
+      outliers           = performance::check_outliers(m_final_log)
+    )
+  }, error = function(e) e)
+
+  if (inherits(checks_log, "error")) {
+    cat("performance checks (log) failed:\n", checks_log$message, "\n")
+  } else {
+    cat("[Heteroscedasticity]\n")
+    print(checks_log$heteroscedasticity)
+    cat("\n[Outliers]\n")
+    print(checks_log$outliers)
+  }
+  cat("\n\n")
+
+  
+  cat("----- LOG RESIDUAL NORMALITY (Shapiro-Wilk) -----\n\n")
+  sh_log <- tryCatch(shapiro.test(resid(m_final_log)), error = function(e) e)
+  if (inherits(sh_log, "error")) {
+    cat("Shapiro (log) failed:\n", sh_log$message, "\n")
+  } else {
+    print(sh_log)
+  }
+  cat("\n\n")
+
+  
+  cat("----- LOG ANOVA TEST (Kenward–Roger) -----\n")
+  aov_kr_log <- tryCatch(anova(m_final_log, ddf = "Kenward-Roger"),
+                        error = function(e) e)
+  if (inherits(aov_kr_log, "error")) {
+    cat("Kenward–Roger (log) failed:\n", aov_kr_log$message, "\n")
+  } else {
+    print(aov_kr_log)
+  }
+  cat("\n\n")
+
+  # Extract emmeans + pairwise (log)
+  emm_log <- tryCatch(emmeans(m_final_log, ~ Species, 
+                              lmer.df = "kenward-roger"), error = function(e) e)
+
+cat("----- LOG PAIRWISE COMPARISONS (Tukey-adjusted) -----\n")
+  if (inherits(emm_log, "error")) {
+    cat("emmeans failed (so pairwise cannot be computed):\n", emm_log$message, "\n")
+    pw_log <- emm_log
+  } else {
+    pw_log <- tryCatch(pairs(emm_log, adjust = "tukey"),
+                   error = function(e) e)
+    if (inherits(pw_log, "error")) {
+      cat("Tukey test failed:\n", pw_log$message, "\n")
+    } else {
+      print(pw_log)
+    }
+  }
+  cat("\n\n\n")
+
+    cat("----- LOG COMPACT LETTER DISPLAY -----\n")
+  cld_res_log <- tryCatch({
+    if (inherits(emm_log, "error")) stop("emmeans failed; cannot compute compact letter display.")
+
+    cld_out_log <- cld(
+      emm_log,
+      alpha = 0.05,
+      Letters = letters,
+      sort = FALSE
+    )
+
+    as.data.frame(cld_out_log)
+  }, error = function(e) e)
+
+  if (inherits(cld_res_log, "error")) {
+    cat("Compact letter display failed:\n", cld_res_log$message, "\n")
+  } else {
+    print(cld_res_log)
+  }
+  cat("\n\n\n")
+  
+    cat("----- LOG EFFECT SIZES (Hedges g) -----\n")
+  eff_log <- tryCatch({
+    if (inherits(emm_log, "error")) stop("emmeans failed; cannot compute effect sizes.")
+    eff_size(emm_log, sigma = sigma(m_final_log), edf = df.residual(m_final_log))
+  }, error = function(e) e)
+
+  if (inherits(eff_log, "error")) {
+    cat("Effect sizes failed:\n", eff_log$message, "\n")
+  } else {
+    print(eff_log)
+  }
+  cat("\n\n\n")
+
+  cat("----- LOG ESTIMATED MARGINAL MEANS (emmeans) -----\n")
+  if (inherits(emm_log, "error")) {
+    cat("emmeans (log) failed:\n", emm_log$message, "\n")
+  } else {
+    print(emm_log)
+  }
+  cat("\n\n\n")
+}
+
+cat("========================\n")
+cat("End of log sensitivity\n")
+cat("========================\n")
+
+sink()
+
+```
+
+## Complementary multivariate analyses
+
+### Principal Component Analysis (PCA)
+
+```{r PCA analyses considering all datasets}
+
+# ============================================================
+# PCA REPORTING (TXT ONLY) - aligned columns + rounded to 3 decimals
+# ============================================================
+
+out_dir_pca <- "G:/ESPORAS_SPCOMP/outputs_script1/1_Spores_dataset/3_PCA"
+dir.create(out_dir_pca, recursive = TRUE, showWarnings = FALSE)
+
+# ------------------------------------------------------------
+# Helper: pretty aligned table printer (tab-separated, fixed widths)
+# - digits_num controls rounding for numeric columns
+# ------------------------------------------------------------
+print_aligned_table <- function(df, digits_num = 3) {
+
+  if (is.null(df) || nrow(df) == 0) {
+    cat("(empty)\n")
+    return(invisible(NULL))
+  }
+
+  df2 <- df
+
+  # Round numeric columns
+  for (j in seq_along(df2)) {
+    if (is.numeric(df2[[j]])) df2[[j]] <- round(df2[[j]], digits_num)
+  }
+
+  # Convert everything to character (keep NA as "")
+  dfc <- as.data.frame(lapply(df2, function(x) {
+    x <- as.character(x)
+    x[is.na(x)] <- ""
+    x
+  }), stringsAsFactors = FALSE)
+
+  # Column widths
+  widths <- vapply(names(dfc), function(nm) {
+    max(nchar(nm), max(nchar(dfc[[nm]]), na.rm = TRUE))
+  }, integer(1))
+
+  # Header
+  header <- paste0(
+    vapply(seq_along(widths), function(i) {
+      sprintf(paste0("%-", widths[i], "s"), names(dfc)[i])
+    }, character(1)),
+    collapse = "  "
+  )
+  cat(header, "\n", sep = "")
+
+  # Separator
+  sep_line <- paste0(
+    vapply(seq_along(widths), function(i) {
+      paste(rep("-", widths[i]), collapse = "")
+    }, character(1)),
+    collapse = "  "
+  )
+  cat(sep_line, "\n", sep = "")
+
+  # Rows
+  for (r in seq_len(nrow(dfc))) {
+    line <- paste0(
+      vapply(seq_along(widths), function(i) {
+        sprintf(paste0("%-", widths[i], "s"), dfc[r, i])
+      }, character(1)),
+      collapse = "  "
+    )
+    cat(line, "\n", sep = "")
+  }
+}
+
+# ------------------------------------------------------------
+# PCA runner (NO CSVs; PCA object only)
+# ------------------------------------------------------------
+run_pca <- function(df, vars, file_prefix, out_dir) {
+
+  X <- df %>%
+    dplyr::select(all_of(vars)) %>%
+    dplyr::mutate(dplyr::across(dplyr::everything(), as.numeric)) %>%
+    scale() %>%
+    as.data.frame()
+
+  pca <- FactoMineR::PCA(X, graph = FALSE)
+
+  return(pca)
+}
+
+# ------------------------------------------------------------
+# TXT REPORT FUNCTION
+# ------------------------------------------------------------
+write_pca_report <- function(pca_obj, df_used, vars_used, pca_name, digits_num = 3) {
+
+  cat("\n\n============================================================\n")
+  cat("PCA:", pca_name, "\n")
+  cat("============================================================\n\n")
+
+  # ---------------- EIGENVALUES ----------------
+  cat("\n---------------------------------------------\n")
+  cat("EIGENVALUES & EXPLAINED VARIANCE\n")
+  cat("---------------------------------------------\n\n")
+
+  eig <- factoextra::get_eigenvalue(pca_obj)
+  eig <- as.data.frame(eig)
+  print_aligned_table(eig, digits_num = digits_num)
+  cat("\n\n")
+
+  # ---------------- VARIABLE LOADINGS / CONTRIB / COS2 ----------------
+  cat("\n---------------------------------------------\n")
+  cat("VARIABLE LOADINGS, CONTRIBUTIONS, COS2\n")
+  cat("---------------------------------------------\n\n")
+
+  # We compute from standardized data + PC scores (robust & consistent with your output)
+  X_scaled <- df_used %>%
+    dplyr::select(all_of(vars_used)) %>%
+    dplyr::mutate(dplyr::across(dplyr::everything(), as.numeric)) %>%
+    scale() %>%
+    as.matrix()
+
+  pcs <- as.matrix(pca_obj$ind$coord)
+  k <- min(4, ncol(pcs))   # up to PC4 (or less if PCA gives fewer)
+  pcs_k <- pcs[, 1:k, drop = FALSE]
+
+  # Remove any constant/NA-only variables (safety)
+  keep <- apply(X_scaled, 2, function(x) {
+    vv <- var(x, na.rm = TRUE)
+    is.finite(vv) && vv > 0
+  })
+  X_scaled <- X_scaled[, keep, drop = FALSE]
+
+  if (ncol(X_scaled) == 0) {
+    cat("WARNING: no non-constant variables available.\n\n")
+  } else {
+
+    # Loadings interpreted as correlations variable–PC
+    coord_mat <- cor(X_scaled, pcs_k, use = "pairwise.complete.obs")
+
+    # Eigenvalues for first k components
+    eigvals <- pca_obj$eig[1:k, 1]
+
+    # Contributions (%): 100 * coord^2 / eigenvalue
+    contrib_mat <- sweep(coord_mat^2, 2, eigvals, FUN = "/") * 100
+
+    # cos2 per variable: coord^2 / sum(coord^2 across included PCs)
+    denom <- rowSums(coord_mat^2)
+    denom[denom == 0] <- NA_real_
+    cos2_mat <- (coord_mat^2) / denom
+
+    loadings <- as.data.frame(coord_mat) %>% tibble::rownames_to_column("Variable")
+    contrib  <- as.data.frame(contrib_mat) %>% tibble::rownames_to_column("Variable")
+    cos2     <- as.data.frame(cos2_mat) %>% tibble::rownames_to_column("Variable")
+
+    cat(">> Loadings:\n\n")
+    print_aligned_table(loadings, digits_num = digits_num)
+    cat("\n\n")
+
+    cat(">> Contributions (%):\n\n")
+    print_aligned_table(contrib, digits_num = digits_num)
+    cat("\n\n")
+
+    cat(">> cos2:\n\n")
+    print_aligned_table(cos2, digits_num = digits_num)
+    cat("\n\n")
+  }
+
+  # ---------------- INDIVIDUAL SCORES ----------------
+  cat("\n---------------------------------------------\n")
+  cat("INDIVIDUAL SCORES\n")
+  cat("---------------------------------------------\n\n")
+
+  scores <- as.data.frame(pca_obj$ind$coord) %>%
+    tibble::rownames_to_column("Individual")
+
+  if ("Species" %in% names(df_used)) {
+    scores$Species <- df_used$Species
+  }
+
+  # keep first 4 dims if present
+  keep_dims <- intersect(c("Dim.1", "Dim.2", "Dim.3", "Dim.4"), names(scores))
+  scores_show <- scores[, c("Individual", keep_dims, intersect("Species", names(scores))), drop = FALSE]
+
+  # round numeric dims (for printing)
+  for (nm in keep_dims) scores_show[[nm]] <- round(scores_show[[nm]], digits_num)
+
+  cat("NOTE: Only first 20 rows printed.\n\n")
+  print_aligned_table(utils::head(scores_show, 20), digits_num = digits_num)
+  cat("\n\n")
+
+  # ---------------- ANOVA PC1/PC2 + Tukey ----------------
+  cat("\n---------------------------------------------\n")
+  cat("TESTS ON PC AXES (Species)\n")
+  cat("---------------------------------------------\n\n")
+
+  if (!("Species" %in% names(scores))) {
+    cat("WARNING: No Species column found; skipping ANOVA/Tukey.\n\n")
+  } else {
+
+    scores$Species <- factor(scores$Species)
+
+    if ("Dim.1" %in% names(scores)) {
+      cat(">> ANOVA PC1\n")
+      a1 <- aov(Dim.1 ~ Species, data = scores)
+      print(summary(a1))
+      cat("\n")
+
+      cat(">> Tukey PC1\n")
+      print(TukeyHSD(a1))
+      cat("\n\n")
+    }
+
+    if ("Dim.2" %in% names(scores)) {
+      cat(">> ANOVA PC2\n")
+      a2 <- aov(Dim.2 ~ Species, data = scores)
+      print(summary(a2))
+      cat("\n")
+
+      cat(">> Tukey PC2\n")
+      print(TukeyHSD(a2))
+      cat("\n\n")
+    }
+  }
+
+  # ---------------- VARIABLE–PC CORRELATIONS ----------------
+  cat("\n---------------------------------------------\n")
+  cat("VARIABLE–PC CORRELATIONS\n")
+  cat("---------------------------------------------\n\n")
+
+  if (!exists("coord_mat")) {
+    cat("NOTE: correlations already printed as 'Loadings' (same matrix).\n\n")
+  } else {
+    cor_pc <- as.data.frame(coord_mat) %>% tibble::rownames_to_column("Variable")
+    print_aligned_table(cor_pc, digits_num = digits_num)
+    cat("\n\n")
+  }
+}
+
+# ------------------------------------------------------------
+# NEW DATASETS
+# ------------------------------------------------------------
+ind_means_Farun <- ind_means %>%
+  dplyr::filter(Species != "Ftrich", Species != "Flamb")
+
+# ------------------------------------------------------------
+# RUN PCAs
+# ------------------------------------------------------------
+pca_main <- run_pca(
+  df = ind_means_pairwise,
+  vars = morpho_vars_permpca,
+  file_prefix = "PCA_main_noFarun",
+  out_dir = out_dir_pca
+)
+
+pca_farun <- run_pca(
+  df = ind_means_Farun,
+  vars = morpho_vars_permpca,
+  file_prefix = "PCA_withFarun",
+  out_dir = out_dir_pca
+)
+
+# ------------------------------------------------------------
+# WRITE TXT REPORT
+# ------------------------------------------------------------
+sink(file.path(out_dir_pca, "PCA_results.txt"), split = FALSE)
+
+cat("===================\n")
+cat("PCA RESULTS\n")
+cat("===================\n")
+
+write_pca_report(
+  pca_obj = pca_main,
+  df_used = ind_means_pairwise,
+  vars_used = morpho_vars_permpca,
+  pca_name = "PCA_main_noFarun",
+  digits_num = 3
+)
+
+write_pca_report(
+  pca_obj = pca_farun,
+  df_used = ind_means_Farun,
+  vars_used = morpho_vars_permpca,
+  pca_name = "PCA_withFarun",
+  digits_num = 3
+)
+
+cat("\n========================\n")
+cat("End of PCA analysis\n")
+cat("========================\n")
+
+sink()
+
+
+# ------------------------------------------------------------
+# PREP OBJECTS FOR PLOTTING (scores + eigenvalues)
+# ------------------------------------------------------------
+pca_df_main  <- as.data.frame(pca_main$ind$coord)
+pca_df_farun <- as.data.frame(pca_farun$ind$coord)
+
+eig_main  <- factoextra::get_eigenvalue(pca_main)
+eig_farun <- factoextra::get_eigenvalue(pca_farun)
+
+# Safety checks: group vectors must match rows of PCA coords
+stopifnot(nrow(pca_df_main)  == nrow(ind_means_pairwise))
+stopifnot(nrow(pca_df_farun) == nrow(ind_means_Farun))
+
+
+
+# Plot the PCA analysis
+plot_pca_group <- function(data, group_vector, color_palette, title, eig_table) {
+
+  data$Group <- group_vector
+
+  # Extract variances (PC1 y PC2)
+  pc1_var <- round(eig_table[1, "variance.percent"], 2)
+  pc2_var <- round(eig_table[2, "variance.percent"], 2)
+
+  # Clean rows
+  data2 <- data %>%
+    dplyr::mutate(Group = as.factor(Group)) %>%
+    dplyr::filter(is.finite(Dim.1), is.finite(Dim.2), !is.na(Group))
+
+  # Calculate centroids
+  centroids <- data2 %>%
+    dplyr::group_by(Group) %>%
+    dplyr::summarise(
+      Dim.1 = mean(Dim.1, na.rm = TRUE),
+      Dim.2 = mean(Dim.2, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  # ------------------------------------------------------------
+  # MANUAL ELLIPSES (robust; ALWAYS draws if possible)
+  # ------------------------------------------------------------
+  make_ellipses <- function(df, level = 0.95, n = 200) {
+
+    # radius for chi-square in 2D
+    r <- sqrt(stats::qchisq(level, df = 2))
+    theta <- seq(0, 2*pi, length.out = n)
+    circle <- cbind(cos(theta), sin(theta))
+
+    out <- df %>%
+      dplyr::group_by(Group) %>%
+      dplyr::group_modify(~{
+        d <- .x
+
+        # need >= 3 points for covariance
+        if (nrow(d) < 3) return(data.frame())
+
+        mu <- c(mean(d$Dim.1), mean(d$Dim.2))
+        S  <- stats::cov(cbind(d$Dim.1, d$Dim.2), use = "pairwise.complete.obs")
+
+        if (any(!is.finite(S))) return(data.frame())
+
+        # ensure positive-definite covariance (nearPD if needed)
+        S_pd <- tryCatch({
+          as.matrix(Matrix::nearPD(S, corr = FALSE)$mat)
+        }, error = function(e) NULL)
+
+        if (is.null(S_pd)) return(data.frame())
+
+        # chol may still fail if too degenerate
+        L <- tryCatch(chol(S_pd), error = function(e) NULL)
+        if (is.null(L)) return(data.frame())
+
+        pts <- t(mu + r * t(circle %*% L))
+
+        data.frame(
+          Dim.1 = pts[, 1],
+          Dim.2 = pts[, 2]
+        )
+      }) %>%
+      dplyr::ungroup()
+
+    out
+  }
+
+  ellipse_df <- make_ellipses(data2, level = 0.95, n = 200)
+
+  # Create PCA plot
+  ggplot2::ggplot(data2, ggplot2::aes(x = Dim.1, y = Dim.2, fill = Group, color = Group)) +
+    # Ellipses behind points
+    ggplot2::geom_polygon(
+      data = ellipse_df,
+      ggplot2::aes(x = Dim.1, y = Dim.2, group = Group, fill = Group, color = Group),
+      alpha = 0.10,
+      linewidth = 0.2,
+      inherit.aes = FALSE
+    ) +
+    ggplot2::geom_point(shape = 21, size = 2, alpha = 0.9) +
+    ggplot2::geom_point(
+      data = centroids,
+      ggplot2::aes(x = Dim.1, y = Dim.2, fill = Group),
+      shape = 24, size = 3, color = "black", stroke = 0.4, inherit.aes = FALSE
+    ) +
+    ggplot2::scale_fill_manual(values = color_palette) +
+    ggplot2::scale_color_manual(values = color_palette) +
+    ggplot2::labs(
+      title = title,
+      x = paste0("PC1 (", pc1_var, "%)"),
+      y = paste0("PC2 (", pc2_var, "%)")
+    ) +
+    ggplot2::coord_fixed(ratio = 1) +
+    ggplot2::theme_bw(base_size = 8) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(size = 9, hjust = 0.5),
+      legend.position = "none",
+      axis.title = ggplot2::element_text(size = 7),
+      axis.text = ggplot2::element_text(size = 6),
+      axis.line = ggplot2::element_line(linewidth = 0.3, color = "black")) +
+    ggplot2::theme(panel.grid = element_blank())
+}
+
+
+# Choose palettes
+pal_main  <- if ("Farun" %in% ind_means_pairwise$Species) species_col else species_col_ingroup
+pal_farun <- if ("Farun" %in% ind_means_Farun$Species) species_col else species_col_ingroup
+
+# Build plots
+p_main <- plot_pca_group(
+  data = pca_df_main,
+  group_vector = ind_means_pairwise$Species,
+  color_palette = pal_main,
+  title = "PCA (no Farun)",
+  eig_table = eig_main
+)
+
+p_farun <- plot_pca_group(
+  data = pca_df_farun,
+  group_vector = ind_means_Farun$Species,
+  color_palette = pal_farun,
+  title = "PCA (with Farun)",
+  eig_table = eig_farun
+)
+
+# Save PDFs
+ggplot2::ggsave(
+  filename = file.path(out_dir_pca, "PCA_ingroup.pdf"),
+  plot = p_main,
+  width = 6, height = 6, units = "in"
+)
+
+ggplot2::ggsave(
+  filename = file.path(out_dir_pca, "PCA_allsp.pdf"),
+  plot = p_farun,
+  width = 6, height = 6, units = "in"
+)
+
+```
+
+\newpage
+
+# Analysis of the growth rate of _Epichloë_ cultures on potato dextrose agar (PDA)
+
+## Load, explore & mutate dataset
+
+```{r Data set load, exploration and transformation}
+# Set directory for outputs
+out_dir_cult <- "G:/ESPORAS_SPCOMP/outputs_script1/2_Culture_growth_dataset/"
+
+# Load dataset into working session
+growth_data <- read.table("G:/ESPORAS_SPCOMP/MORPHOLOGY/culture_growth_rate_dataset_final.csv", 
+                          dec = ",", sep = ";", header = TRUE, row.names = 1)
+
+# Create new variables
+growth_data <- growth_data %>%
+  mutate(Rep_ind = paste(Ind, Rep, sep = "-"),
+         Day = as.factor(Day),
+         Ind = as.factor(Ind),
+         Rep = as.factor(Rep),
+         Species = as.factor(Species))
+
+```
+
+## Computation of Growth rate Mixed-effects model fitting
+
+```{r Growth rate computation}
+
+# Compute growth rate between D0 and D21 (mm/day)
+growth_D0 <- growth_data %>%
+  filter(Day == "D0") %>%
+  dplyr::select(Rep_ind, Diameter_D0 = Diameter)
+
+growth_D21 <- growth_data %>%
+  filter(Day == "D21") %>%
+  dplyr::select(Rep_ind, Diameter_D21 = Diameter)
+
+growth_summary <- left_join(growth_D0, growth_D21, by = "Rep_ind") %>%
+  mutate(GR = (Diameter_D21 - Diameter_D0) / 21) %>%
+  left_join(
+    growth_data %>%
+      dplyr::select(Rep_ind, Ind, Species, Rep) %>%
+      distinct(),
+    by = "Rep_ind"
+  ) %>%
+  filter(!is.na(GR))
+
+# Create species vectors
+ord_no_farun <- c("Ftrich", "Flamb", "Fyves", "Froth", "Fnigr", "Fprui")
+ord_with_farun <- c("Ftrich", "Flamb", "Fyves", "Froth", "Fnigr", "Fprui", "Farun")
+
+# Datasets preparation
+growth_data_plot <- growth_data %>%
+  mutate(
+    Diameter = as.numeric(Diameter),
+    Day_num  = as.numeric(str_remove(Day, "^D")),
+    Species  = factor(Species, levels = ord_with_farun),
+    Ind      = as.factor(Ind)
+  )
+
+growth_mean <- growth_data_plot %>%
+  group_by(Species, Ind, Day_num) %>%
+  summarise(Diameter = mean(Diameter), .groups = "drop")
+
+species_mean <- growth_mean %>%
+  group_by(Species, Day_num) %>%
+  summarise(Diameter = mean(Diameter), .groups = "drop")
+
+growth_ind_mean <- growth_summary %>%
+  group_by(Species, Ind) %>%
+  summarise(GR = mean(GR), .groups = "drop") %>%
+  mutate(Species = factor(Species, levels = ord_with_farun))
+
+# Create and save summary table of GR (Species level)
+summary_table_GR <- growth_ind_mean %>%
+  dplyr::group_by(Species) %>%
+  dplyr::summarise(
+    N_isolates = dplyr::n(),
+    Mean = mean(GR),
+    SD = sd(GR),
+    SE = SD / sqrt(N_isolates),
+    CV = (SD / Mean) * 100,
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(
+    Mean = round(Mean, 2),
+    SE   = round(SE, 2),
+    CV   = round(CV, 1),
+    GR_mean_SE = paste0(Mean, " ± ", SE)
+  ) %>%
+  dplyr::select(Species, GR_mean_SE, CV)
+
+write.table(
+  summary_table_GR,
+  file = paste0(out_dir_cult, "summary_table_GR.txt"),
+  sep = "\t",
+  row.names = FALSE,
+  quote = FALSE
+)
+
+```
+
+```{r Mixed-effects model fitting and diagnostics}
+
+# -------------------------
+# MIXED-EFFECTS MODEL (your biological question)
+# Species = fixed effect, Isolate (Ind) nested within Species = random effect
+# -------------------------
+growth_filtered <- subset(growth_summary,
+                          !(Species %in% c("Flamb","Ftrich", "Farun")))
+
+model_species <- lmer(GR ~ Species + (1 | Species:Ind), data = growth_filtered)
+
+# -------------------------
+# SAVE RESULTS TO TXT
+# -------------------------
+sink(file.path(out_dir_cult, "lme_results_noFarun.txt"), split = FALSE)
+
+cat(">>> Mixed-effects model: GR ~ Species + (1 | Species:Ind) <<<\n\n")
+print(anova(model_species))
+
+cat("\nPost-hoc test (Tukey):\n")
+print(emmeans(model_species, pairwise ~ Species, adjust = "tukey"))
+
+cat("\n\n>>> Random-effects variance (Isolate within Species) <<<\n\n")
+print(VarCorr(model_species))
+
+# Optional: ICC for isolate-within-species variance
+vc <- as.data.frame(VarCorr(model_species))
+var_ind <- vc$vcov[vc$grp == "Species:Ind"]
+var_res <- vc$vcov[vc$grp == "Residual"]
+ICC_ind <- var_ind / (var_ind + var_res)
+
+cat("\n\nICC (proportion of variance due to isolates within species):\n")
+print(ICC_ind)
+
+sink()
+
+# -------------------------
+# DIAGNOSTIC PLOTS TO PDF
+# -------------------------
+pdf("G:/ESPORAS_SPCOMP/outputs_script1/2_Culture_growth_dataset/lme_diagnostics_noFarun.pdf", 
+    width = 8, height = 10)
+
+par(mfrow = c(2, 2))
+
+plot(resid(model_species), main = "Residuals: Species model")
+qqnorm(resid(model_species)); qqline(resid(model_species))
+
+plot(fitted(model_species), resid(model_species),
+     main = "Residuals vs Fitted",
+     xlab = "Fitted values", ylab = "Residuals")
+abline(h = 0)
+
+invisible(dev.off())
+par(mfrow = c(1, 1))
+
+```
+
+
+```{r}
+
+# -------------------------
+# GR PLOTS (diamonds with black border + colored fill)
+# -------------------------
+p_gr_no_farun <- ggplot(filter(growth_ind_mean, Species %in% ord_no_farun),
+                        aes(x = Species, y = GR, color = Species)) +
+  geom_point(size = 3, alpha = 0.35,
+             position = position_jitter(width = 0.05)) +
+  stat_summary(fun = mean, geom = "point",
+               size = 3.5, shape = 23,
+               stroke = 1, lwd = 0.8,
+               aes(fill = Species),
+               color = "black") +
+  scale_color_manual(values = species_col, drop = FALSE) +
+  scale_fill_manual(values = species_col, drop = FALSE) +
+  labs(x = "Species", y = "Growth rate (mm/day)", title = "Panel 1: without Farun") +
+  theme_bw() +
+  theme(
+    legend.position = "none",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  ) +
+  scale_x_discrete(expand = expansion(mult = c(0.05, 0.05)))
+
+p_gr_with_farun <- ggplot(filter(growth_ind_mean, Species %in% ord_with_farun),
+                          aes(x = Species, y = GR, color = Species)) +
+  geom_point(size = 3, alpha = 0.35,
+             position = position_jitter(width = 0.05)) +
+  stat_summary(fun = mean, geom = "point",
+               size = 3.5, shape = 23,
+               stroke = 1, lwd = 0.8,
+               aes(fill = Species),
+               color = "black") +
+  scale_color_manual(values = species_col, drop = FALSE) +
+  scale_fill_manual(values = species_col, drop = FALSE) +
+  labs(x = "Species", y = "Growth rate (mm/day)", title = "Panel 2: with Farun") +
+  theme_bw() +
+  theme(
+    legend.position = "none",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  ) +
+  scale_x_discrete(expand = expansion(mult = c(0.05, 0.05)))
+  theme(legend.position = "none")
+
+# -------------------------
+# CURVE PLOTS (isolates colored by species, alpha=0.35; mean thicker)
+# -------------------------
+p_curve_no_farun <- ggplot(filter(growth_mean, Species %in% ord_no_farun),
+                           aes(x = Day_num, y = Diameter, group = Ind, color = Species)) +
+  geom_line(size = 0.5, alpha = 0.5) +
+  geom_line(data = filter(species_mean, Species %in% ord_no_farun),
+            inherit.aes = FALSE,
+            aes(x = Day_num, y = Diameter, group = Species, color = Species),
+            size = 1, alpha = 1) +
+  geom_point(data = filter(species_mean, Species %in% ord_no_farun),
+             inherit.aes = FALSE,
+             aes(x = Day_num, y = Diameter, color = Species),
+             size = 2) +
+  scale_color_manual(values = species_col, drop = FALSE) +
+  scale_x_continuous(breaks = c(0, 2, 7, 14, 21), limits = c(0, 21)) +
+  labs(x = "Days after inoculation",
+       y = "Colony diameter (mm)",
+       title = "Panel 1: without Farun") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+p_curve_with_farun <- ggplot(filter(growth_mean, Species %in% ord_with_farun),
+                             aes(x = Day_num, y = Diameter, group = Ind, color = Species)) +
+  geom_line(size = 0.5, alpha = 0.5) +
+  geom_line(data = filter(species_mean, Species %in% ord_with_farun),
+            inherit.aes = FALSE,
+            aes(x = Day_num, y = Diameter, group = Species, color = Species),
+            size = 1, alpha = 1) +
+  geom_point(data = filter(species_mean, Species %in% ord_with_farun),
+             inherit.aes = FALSE,
+             aes(x = Day_num, y = Diameter, color = Species),
+             size = 2) +
+  scale_color_manual(values = species_col, drop = FALSE) +
+  scale_x_continuous(breaks = c(0, 2, 7, 14, 21), limits = c(0, 21)) +
+  labs(x = "Days after inoculation",
+       y = "Colony diameter (mm)",
+       title = "Panel 2: with Farun") +
+  theme_bw() +
+  theme(legend.position = "none")  
+  
+  
+# -------------------------
+# COMBINE PANELS
+# -------------------------
+fig_no_farun  <- p_gr_no_farun + p_curve_no_farun
+fig_with_farun <- p_gr_with_farun + p_curve_with_farun
+
+# -------------------------
+# SAVE TO PDF
+# -------------------------
+ggsave(filename = file.path(out_dir_cult, "GR_noFarun.pdf"),
+       plot = fig_no_farun, device = cairo_pdf,
+       width = 10, height = 4, units = "in")
+
+ggsave(filename = file.path(out_dir_cult, "GR_Farun.pdf"),
+       plot = fig_with_farun, device = cairo_pdf,
+       width = 10, height = 4, units = "in")
+
+```
+
+```{r End of script}
+
+# Message announcing the end of the script and where to find the output files
+cat("\n✅ Script executed successfully.\n\nAll output files are available in 'FrothEpi_Github/Fungal_endophyte/data/outputs_script1 \nwithin the GitHub repository downloaded by the user.\n")
+
+
+CAMBIA ESTOOOO!!!!!!!
+```
