@@ -41,7 +41,7 @@ FestucaEpichloeComparativeStudy/
 │   │   │   ├── UFBoot_values_ITS.xlsx         # UltraFast bootstrap values for each node in the ITS phylogenetic tree. Input script2.Rmd.
 │   │   │   ├── UFBoot_values_tefA.xlsx        # UltraFast bootstrap values for each node in the tefA phylogenetic tree. Input script2.Rmd.
 │   │   │   ├── UFBoot_values_tubB.xlsx        # UltraFast bootstrap values for each node in the tubB phylogenetic tree. Input script2.Rmd.
-│   │   │   └── UFBoot_and_scfl_values_MLtree  # UltraFast bootstrap and SCFL values for each node in the ML phylogeentic tree. Input script2.Rmd.
+│   │   │   └── UFBootscfl_values_MLtree.xslx  # UltraFast bootstrap and SCFL values for each node in the ML phylogeentic tree. Input script2.Rmd.
 │   │   │   
 │   │   ├── culture_growth_dataset.csv         # Dataset for culture growth rate analysis (used in script1.Rmd).
 │   │   │                                      This file is semicolon-delimited and uses a comma as the decimal separator.
