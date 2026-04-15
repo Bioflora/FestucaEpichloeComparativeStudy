@@ -1,3 +1,4 @@
+#FestucaEpichloeComparativeStudy
 The project is organized under the main directory FestucaEpichloeComparativeStudy/, structured into two major modules: Plant_host/ and 
 Fungal_endophyte/. Each module contains data, scripts, and/or outputs corresponding to specific stages of the analysis.
 Folder system as follows:
@@ -8,11 +9,12 @@ FestucaEpichloeComparativeStudy/
 │   └── data/                                                                      
 │       └── flow_cytometry_host.xlsx           # Genome size estimations via flow cytometry for the Festuca species.
 │                                              Variables: Holobiont_ID (holobiont identification code);
-│                                              Host_sp (plant host species); 
+│                                              Host_sp (plant host species);
+|                                              Endophyte_sp (fungal endophyte species);
 │                                              measurement_ID (measurement identification code);
 │                                              nucleids (number of particles counted in the sample); 
 │                                              nucleids_ST (number of particles counted in the standard); 
-│                                              mean (arithmetic mean of the fluorescence intensities of all particles included in the sample); 
+│                                              mean (arithmetic mean of the fluorescence intensities of all particlesincluded in the sample); 
 │                                              mean_ST (arithmetic mean of the fluorescence intensities of all particles included in the standard);
 │                                              CV (coefficient of Variation of the sample); 
 │                                              CV_ST (coefficient of Variation of the standard);
@@ -23,8 +25,9 @@ FestucaEpichloeComparativeStudy/
 ├── Fungal_endophyte/
 │   ├── data/
 │   │   ├── outputs_script1/                   # Output files of the morphological analyses (from script1.Rmd)
-│   │   ├── outputs_script2/                   # Single-gene, species tree and concatenated ML files (from script2.Rmd)
-│   │   ├── outputs_script3/                   # Alkaloids heatmap (from script3.Rmd)
+│   │   ├── outputs_script2/                   # Raw single-gene, species tree and concatenated ML files (from script2.sh)
+│   │   ├── outputs_script3/                   # Formated single-gene, species tree and concatenated ML files (from script3.Rmd)
+│   │   ├── outputs_script4/                   # Alkaloids heatmap (from script4.Rmd)
 │   │   ├── Phylogenetic_analysis/
 │   │   │   │  
 │   │   │   ├── MSA/                           # Multiple sequence alignments (FASTA format)
@@ -69,16 +72,13 @@ FestucaEpichloeComparativeStudy/
 │   │                                          CV (coefficient of Variation of the sample); 
 │   │                                          CV_STD (coefficient of Variation of the standard);
 │   │                                          pg/1C (estimated genome size of the sample); 
-│   │                                          pg/1C_STD (known genome size of the standard);
-│   │                                          meanGS_Sample (mean genome size per isolate); 
-│   │                                          SD_Sample (Standard deviation per isolate);
-│   │                                          global_GS (global genome size value); 
-│   │                                          global_SD (global standard deviation).                    
+│   │                                          pg/1C_STD (known genome size of the standard);             
 │   │
 │   └── scripts/
 │       ├── script1.Rmd                       # RMarkdown: Morphological analysis of fungal endophyte.
-│       ├── script2.sh                        # Shell script: Detection of multiple gene copies in reference genomes.
-│       ├── script3.sh                        # Shell script: Phylogenetic inference using IQ-TREE2 and ASTRAL.
-│       └── script4.Rmd                       # RMarkdown: Visualization and editing of phylogenetic trees.
+│       ├── script2.sh                        # Shell script: Phylogenetic inference using IQ-TREE2 and ASTRAL.
+│       ├── script3.Rmd                       # Rmarkdown: Visualization and editing of phylogenetic trees.
+│       └── script4.Rmd                       # RMarkdown: Generation of the alkaloids heatmap.
 └
 
+```
