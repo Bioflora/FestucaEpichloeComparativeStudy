@@ -9,7 +9,7 @@ FestucaEpichloeComparativeStudy/
 │
 ├── Plant_host/
 │   └── data/                                                                      
-│       └── flow_cytometry_host.xlsx           # Genome size estimations via flow cytometry for the Festuca species.
+│       └── flow_cytometry_host.csv            # Genome size estimations via flow cytometry for the Festuca species.
 │                                              Variables: Holobiont_ID (holobiont identification code);
 │                                              Host_sp (plant host species);
 |                                              Endophyte_sp (fungal endophyte species);
@@ -62,8 +62,29 @@ FestucaEpichloeComparativeStudy/
 │   │   │                                      conidiophL (conidiophore length in μm);
 │   │   │                                      conidiophW (conidiophore width in μm); 
 │   │   │                                      conidA (conidial area in μm²); 
-│   │   │             
-│   │   └── flow_cytometry_endophyte.xlsx      # Genome size estimations of Epichloë festucae via flow cytometry.
+│   │   │
+│   │   ├── alkaloids_qualitative.csv          # Dataset for qualitative detection for the four alkaloid families.
+│   │   │                                      Presence indicated with "YES", traces indicated with "TRACES" and absence indicated with "NO".
+│   │   │                                      Variables: Hostsp (holobiont identification code);
+│   │   │                                      SampleID (Individual identification code);
+│   │   │                                      E (Epichloë incidence in the individuals tested);
+│   │   │                                      Columns 4 to 25 correspond to chemical compounds tested.
+│   │   │
+│   │   ├── alkaloids_quantitative.csv         # Dataset for quantitative measurements for the three alkaloid families.
+│   │   │                                      Variables: Hostsp (holobiont identification code);
+│   │   │                                      SampleID (Individual identification code);
+│   │   │                                      E (Epichloë incidence in the individuals tested);
+│   │   │                                      Columns 4 to 6 correspond to compounds concentrations detected (units are specified in each case).
+│   │   │   
+│   │   ├── alkaloids_PCR.csv                  # Dataset for PCR results for the key fungal genes involved in alkaloid synthesis.
+│   │   │                                      Presence indicated with "+" and absence indicated with "-".
+│   │   │                                      Variables: Hostsp (holobiont identification code);
+│   │   │                                      SampleID (Individual identification code);
+│   │   │                                      E (Epichloë incidence in the individuals tested);
+│   │   │                                      Columns 4 to 9 correspond to the key fungal genes tested.
+│   │   │
+│   │   │  
+│   │   └── flow_cytometry_endophyte.csv       # Genome size estimations of Epichloë festucae via flow cytometry.
 │   │                                          Variables: Holobiont_ID (holobiont identification code);
 │   │                                          Host_sp: (plant host specuiese identification code); 
 │   │                                          Measurement_ID (measurement identification code);
