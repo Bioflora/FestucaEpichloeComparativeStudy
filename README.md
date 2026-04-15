@@ -33,7 +33,7 @@ FestucaEpichloeComparativeStudy/
 │   │   ├── Phylogenetic_analysis/
 │   │   │   │  
 │   │   │   ├── MSA/                           # Multiple sequence alignments (FASTA format)
-│   │   │   │  
+│   │   │   ├── TREES/                         # Files obtained from script2.sh (raw phylogenetic trees) 
 │   │   │   ├── PP_values_ASTRAL_SPTREE.xlsx   # Posterior probability values for each node of the ASTRAL phylogenetic tree. Input script2.Rmd.
 │   │   │   ├── Q_values_ASTRAL_SPTREE.xlsx    # Quartet values for each node of the ASTRAL phylogenetic tree. Input script2.Rmd.
 │   │   │   ├── UFBoot_values_actG.xlsx        # UltraFast bootstrap values for each node in the actG phylogenetic tree. Input script2.Rmd.
