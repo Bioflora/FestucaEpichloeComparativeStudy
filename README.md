@@ -1,0 +1,84 @@
+The project is organized under the main directory FestucaEpichloeComparativeStudy/, structured into two major modules: Plant_host/ and 
+Fungal_endophyte/. Each module contains data, scripts, and/or outputs corresponding to specific stages of the analysis.
+Folder system as follows:
+
+FestucaEpichloeComparativeStudy/
+│
+├── Plant_host/
+│   └── data/                                                                      
+│       └── flow_cytometry_host.xlsx           # Genome size estimations via flow cytometry for the Festuca species.
+│                                              Variables: Holobiont_ID (holobiont identification code);
+│                                              Host_sp (plant host species); 
+│                                              measurement_ID (measurement identification code);
+│                                              nucleids (number of particles counted in the sample); 
+│                                              nucleids_ST (number of particles counted in the standard); 
+│                                              mean (arithmetic mean of the fluorescence intensities of all particles included in the sample); 
+│                                              mean_ST (arithmetic mean of the fluorescence intensities of all particles included in the standard);
+│                                              CV (coefficient of Variation of the sample); 
+│                                              CV_ST (coefficient of Variation of the standard);
+│                                              pg/2C (estimated genome size of the sample); 
+│                                              pg/2C_ST (known genome size of the standard);
+│
+│
+├── Fungal_endophyte/
+│   ├── data/
+│   │   ├── outputs_script1/                   # Output files of the morphological analyses (from script1.Rmd)
+│   │   ├── outputs_script2/                   # Single-gene, species tree and concatenated ML files (from script2.Rmd)
+│   │   ├── outputs_script3/                   # Alkaloids heatmap (from script3.Rmd)
+│   │   ├── Phylogenetic_analysis/
+│   │   │   │  
+│   │   │   ├── MSA/                           # Multiple sequence alignments (FASTA format)
+│   │   │   │  
+│   │   │   ├── PP_values_ASTRAL_SPTREE.xlsx   # Posterior probability values for each node of the ASTRAL phylogenetic tree. Input script2.Rmd.
+│   │   │   ├── Q_values_ASTRAL_SPTREE.xlsx    # Quartet values for each node of the ASTRAL phylogenetic tree. Input script2.Rmd.
+│   │   │   ├── UFBoot_values_actG.xlsx        # UltraFast bootstrap values for each node in the actG phylogenetic tree. Input script2.Rmd.
+│   │   │   ├── UFBoot_values_CalM.xlsx        # UltraFast bootstrap values for each node in the CalM phylogenetic tree. Input script2.Rmd.
+│   │   │   ├── UFBoot_values_ITS.xlsx         # UltraFast bootstrap values for each node in the ITS phylogenetic tree. Input script2.Rmd.
+│   │   │   ├── UFBoot_values_tefA.xlsx        # UltraFast bootstrap values for each node in the tefA phylogenetic tree. Input script2.Rmd.
+│   │   │   ├── UFBoot_values_tubB.xlsx        # UltraFast bootstrap values for each node in the tubB phylogenetic tree. Input script2.Rmd.
+│   │   │   └── UFBoot_and_scfl_values_MLtree  # UltraFast bootstrap and SCFL values for each node in the ML phylogeentic tree. Input script2.Rmd.
+│   │   │   
+│   │   ├── culture_growth_dataset.csv         # Dataset for culture growth rate analysis (used in script1.Rmd).
+│   │   │                                      This file is semicolon-delimited and uses a comma as the decimal separator.
+│   │   │                                      Variables: IndID (measurement identification code);
+│   │   │                                      Ind (short name for each isolate);
+│   │   │                                      Rep (replicate code within each isolate);
+│   │   │                                      Day (Day the measurement was made);
+│   │   │                                      Diameter (diameter of the culture in mm)
+│   │   │                                      Species (holobiont idntification code).
+│   │   │ 
+│   │   ├── spores_dataset.csv                 # Morphometric data of asexual reproductive structures (used in script1.Rmd). 
+│   │   │                                      This file is semicolon-delimited and uses a comma as the decimal separator.
+│   │   │                                      Variables: Species (holobiont identification code);
+│   │   │                                      SampleID (measurement identification code); 
+│   │   │                                      Ind (short name for each isolate);   
+│   │   │                                      conidL (conidial length in μm);
+│   │   │                                      conidW (conidial width in μm); 
+│   │   │                                      conidiophL (conidiophore length in μm);
+│   │   │                                      conidiophW (conidiophore width in μm); 
+│   │   │                                      conidA (conidial area in μm²); 
+│   │   │             
+│   │   └── flow_cytometry_endophyte.xlsx      # Genome size estimations of Epichloë festucae via flow cytometry.
+│   │                                          Variables: Holobiont_ID (holobiont identification code);
+│   │                                          Host_sp: (plant host specuiese identification code); 
+│   │                                          Measurement_ID (measurement identification code);
+│   │                                          nucleids (number of particles counted in the sample); 
+│   │                                          nucleids_STD (number of particles counted in the standard); 
+│   │                                          mean (arithmetic mean of the fluorescence intensities of all particles included in the sample); 
+│   │                                          mean_STD (arithmetic mean of the fluorescence intensities of all particles included in the standard);
+│   │                                          CV (coefficient of Variation of the sample); 
+│   │                                          CV_STD (coefficient of Variation of the standard);
+│   │                                          pg/1C (estimated genome size of the sample); 
+│   │                                          pg/1C_STD (known genome size of the standard);
+│   │                                          meanGS_Sample (mean genome size per isolate); 
+│   │                                          SD_Sample (Standard deviation per isolate);
+│   │                                          global_GS (global genome size value); 
+│   │                                          global_SD (global standard deviation).                    
+│   │
+│   └── scripts/
+│       ├── script1.Rmd                       # RMarkdown: Morphological analysis of fungal endophyte.
+│       ├── script2.sh                        # Shell script: Detection of multiple gene copies in reference genomes.
+│       ├── script3.sh                        # Shell script: Phylogenetic inference using IQ-TREE2 and ASTRAL.
+│       └── script4.Rmd                       # RMarkdown: Visualization and editing of phylogenetic trees.
+└
+
