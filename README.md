@@ -68,13 +68,13 @@ FestucaEpichloeComparativeStudy/
 │   │                                          Host_sp: (plant host specuiese identification code); 
 │   │                                          Measurement_ID (measurement identification code);
 │   │                                          nucleids (number of particles counted in the sample); 
-│   │                                          nucleids_STD (number of particles counted in the standard); 
+│   │                                          nucleids_ST (number of particles counted in the standard); 
 │   │                                          mean (arithmetic mean of the fluorescence intensities of all particles included in the sample); 
-│   │                                          mean_STD (arithmetic mean of the fluorescence intensities of all particles included in the standard);
+│   │                                          mean_ST (arithmetic mean of the fluorescence intensities of all particles included in the standard);
 │   │                                          CV (coefficient of Variation of the sample); 
-│   │                                          CV_STD (coefficient of Variation of the standard);
+│   │                                          CV_ST (coefficient of Variation of the standard);
 │   │                                          pg/1C (estimated genome size of the sample); 
-│   │                                          pg/1C_STD (known genome size of the standard);             
+│   │                                          pg/1C_ST (known genome size of the standard);             
 │   │
 │   └── scripts/
 │       ├── script1.Rmd                       # RMarkdown: Morphological analysis of fungal endophyte.
