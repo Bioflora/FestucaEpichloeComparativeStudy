@@ -1,4 +1,6 @@
-#FestucaEpichloeComparativeStudy
+# FestucaEpichloecomparativeStudy
+
+```
 The project is organized under the main directory FestucaEpichloeComparativeStudy/, structured into two major modules: Plant_host/ and 
 Fungal_endophyte/. Each module contains data, scripts, and/or outputs corresponding to specific stages of the analysis.
 Folder system as follows:
