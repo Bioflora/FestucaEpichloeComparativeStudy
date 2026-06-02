@@ -1,0 +1,37 @@
+﻿Holobiont_ID;Host_sp;Endophyte_sp;measurement_ID;nucleids;nucleids_ST;mean;mean_ST;CV;CV_ST;pg/1C;pg/1C_ST
+Ftrich;Festuca trichophylla;Epichloë festucae;UZ_4.22(1)_Coll_REP1;15965;7728;13667;18905;6,88;5,83;0,05;0,069
+Ftrich;Festuca trichophylla;Epichloë festucae;UZ_4.22(1)_Coll_REP2;19278;14973;14769;19794;5,9;4,55;0,051;0,069
+Ftrich;Festuca trichophylla;Epichloë festucae;UZ_4.22(1)_Coll_REP3;28094;13341;14306;20107;6,02;4,24;0,049;0,069
+Ftrich;Festuca trichophylla;Epichloë festucae;UZ_4.22(1)_Coll_REP4;20909;10132;14440;20131;5,9;4,19;0,049;0,069
+Ftrich;Festuca trichophylla;Epichloë festucae;UZ_4.22(1)_Coll_REP5;20619;14246;12503;16965;6,85;4,99;0,051;0,069
+Ftrich;Festuca trichophylla;Epichloë festucae;UZ_4.22(1)_Coll_REP6;7418;17924;13480;17924;6,4;4,75;0,052;0,069
+Flamb;Festuca lambinonii;Epichloë festucae;UZ_13.22(5)_Coll_REP1;20668;12755;12081;17211;6,52;5,04;0,048;0,069
+Flamb;Festuca lambinonii;Epichloë festucae;UZ_13.22(5)_Coll_REP2;7999;5528;11969;17340;6,44;4,94;0,048;0,069
+Flamb;Festuca lambinonii;Epichloë festucae;UZ_13.22(5)_Coll_REP3;26046;15615;12373;17153;6,12;4,4;0,05;0,069
+Flamb;Festuca lambinonii;Epichloë festucae;UZ_13.22(5)_Coll_REP4;14456;8383;12587;17402;6,65;4,54;0,05;0,069
+Flamb;Festuca lambinonii;Epichloë festucae;UZ_13.22(5)_Coll_REP5;25583;13302;11407;17168;6,91;4,34;0,046;0,069
+Flamb;Festuca lambinonii;Epichloë festucae;UZ_13.22(5)_Coll_REP6;17983;10408;11964;17891;6,63;4,56;0,046;0,069
+Fyves;Festuca yvesii;Epichloë festucae;UZ_7.23(4)_Coll_REP3;37578;10621;12731;18538;6,31;4,43;0,047;0,069
+Fyves;Festuca yvesii;Epichloë festucae;UZ_7.23(4)_Coll_REP4;31508;13878;12527;19050;6,3;4,27;0,045;0,069
+Fyves;Festuca yvesii;Epichloë festucae;UZ_7.23(8)_Coll_REP1;13845;8502;11750;17502;7,29;4,91;0,046;0,069
+Fyves;Festuca yvesii;Epichloë festucae;UZ_7.23(8)_Coll_REP2;16532;10563;11901;17600;6,91;4,81;0,047;0,069
+Fyves;Festuca yvesii;Epichloë festucae;UZ_7.23(11)_Coll_REP1;5757;5367;11764;18073;6,65;4,18;0,045;0,069
+Fyves;Festuca yvesii;Epichloë festucae;UZ_7.23(11)_Coll_REP2;6070;5065;11676;17857;5,95;4,27;0,045;0,069
+Fnigr;Festuca nigrescens;Epichloë festucae;UZ_44.22(1)_Coll_REP1;18185;11995;13980;20002;5,95;4,36;0,048;0,069
+Fnigr;Festuca nigrescens;Epichloë festucae;UZ_44.22(1)_Coll_REP2;15746;10465;14291;20408;5,85;4,29;0,048;0,069
+Fnigr;Festuca nigrescens;Epichloë festucae;UZ_44.22(2)_Coll_REP1;19088;6125;12078;18128;6,9;4,38;0,046;0,069
+Fnigr;Festuca nigrescens;Epichloë festucae;UZ_44.22(2)_Coll_REP2;14964;11470;12293;17535;6,31;5,55;0,048;0,069
+Fnigr;Festuca nigrescens;Epichloë festucae;UZ_44.22(4)_Coll_REP1;24883;13064;13411;18323;6,28;5,39;0,051;0,069
+Fnigr;Festuca nigrescens;Epichloë festucae;UZ_44.22(4)_Coll_REP2;24715;11892;12547;17034;6,05;5,07;0,051;0,069
+Fprui;Festuca rubra subsp. pruinosa;Epichloë festucae;UZ_55.22(2)_Coll_REP1;9563;10397;11905;20643;6,9;4,3;0,04;0,069
+Fprui;Festuca rubra subsp. pruinosa;Epichloë festucae;UZ_55.22(2)_Coll_REP2;7234;8472;12269;20438;6,74;4,34;0,041;0,069
+Fprui;Festuca rubra subsp. pruinosa;Epichloë festucae;UZ_55.22(3)_Coll_REP1;18130;15992;11861;18242;6,74;4,67;0,045;0,069
+Fprui;Festuca rubra subsp. pruinosa;Epichloë festucae;UZ_55.22(3)_Coll_REP2;33067;28181;11750;18063;6,67;4,17;0,045;0,069
+Fprui;Festuca rubra subsp. pruinosa;Epichloë festucae;UZ_55.22(4)_Coll_REP1;14255;16750;12355;17884;6,84;5,42;0,048;0,069
+Fprui;Festuca rubra subsp. pruinosa;Epichloë festucae;UZ_55.22(4)_Coll_REP2;11577;10342;12494;17635;6,49;4,11;0,049;0,069
+Farun;Festuca arundinacea subsp. arundinacea;Epichloë coenophiala;UZ_2.23(3)_Coll_REP1;5068;29239;17576;11696;4,99;5,58;0,104;0,069
+Farun;Festuca arundinacea subsp. arundinacea;Epichloë coenophiala;UZ_2.23(3)_Coll_REP2;6917;33086;16466;11054;5,07;5,97;0,103;0,069
+Farun;Festuca arundinacea subsp. arundinacea;Epichloë coenophiala;UZ_2.23(4)_Coll_REP1;9940;23241;21805;13629;4,13;5,14;0,11;0,069
+Farun;Festuca arundinacea subsp. arundinacea;Epichloë coenophiala;UZ_2.23(4)_Coll_REP2;8385;18485;21523;13362;4,19;5,18;0,111;0,069
+Farun;Festuca arundinacea subsp. arundinacea;Epichloë coenophiala;UZ_2.23(6)_Coll_REP1;9557;14252;20245;11684;5,14;5,55;0,12;0,069
+Farun;Festuca arundinacea subsp. arundinacea;Epichloë coenophiala;UZ_2.23(6)_Coll_REP2;8098;9609;19472;11207;4,92;5,77;0,12;0,069
