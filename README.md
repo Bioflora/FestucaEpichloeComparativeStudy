@@ -26,24 +26,15 @@ FestucaEpichloeComparativeStudy/
 │
 ├── Fungal_endophyte/
 │   ├── data/
-│   │   ├── outputs_script1/                   # Output files of the morphological analyses
-│   │   ├── outputs_script2/                   # Raw single-gene, species tree and concatenated ML files
-│   │   ├── outputs_script3/                   # Formated single-gene, species tree and concatenated ML files
-│   │   ├── outputs_script4/                   # Alkaloids heatmap, raw figures (from script4.Rmd)
+│   │   ├── outputs_script_1/                  # Output files of the morphological analyses (from script_1.Rmd)
+│   │   ├── outputs_script_2/                  # Phylogenetic trees and their support values files (from script_2.Rmd) 
+│   │   ├── outputs_script_3/                  # Alkaloids heatmap, raw figures (from script3.Rmd)
 │   │   ├── Phylogenetic_analysis/
 │   │   │   │  
-│   │   │   ├── MSA/                           # Multiple sequence alignments (FASTA format; input script2.sh)
-│   │   │   ├── TREES/                         # Files obtained from script2.sh (raw phylogenetic trees; input script3.Rmd) 
-│   │   │   ├── PP_values_ASTRAL_SPTREE.xlsx   # Posterior probability values for the ASTRAL tree; input script3.Rmd.
-│   │   │   ├── Q_values_ASTRAL_SPTREE.xlsx    # Quartet values for each node of the ASTRAL tree; input script3.Rmd.
-│   │   │   ├── UFBoot_values_actG.xlsx        # UltraFast bootstrap values for the actG tree; input script3.Rmd.
-│   │   │   ├── UFBoot_values_CalM.xlsx        # UltraFast bootstrap values for the CalM tree; input script3.Rmd.
-│   │   │   ├── UFBoot_values_ITS.xlsx         # UltraFast bootstrap values for ITS tree; input script3.Rmd.
-│   │   │   ├── UFBoot_values_tefA.xlsx        # UltraFast bootstrap values for the tefA tree; input script3.Rmd.
-│   │   │   ├── UFBoot_values_tubB.xlsx        # UltraFast bootstrap values for the tubB tree; input script3.Rmd.
-│   │   │   └── UFBootscfl_values_MLtree.xslx  # UltraFast bootstrap and SCFL values for the ML tree; input script3.Rmd.
+│   │   │   ├── MSA/                           # Multiple sequence alignments (FASTA format)
+│   │   │   └── TREES/                         # Raw phylogenetic trees obtained from IQTREE and ASTRAL. 
 │   │   │   
-│   │   ├── culture_growth_dataset.csv         # Dataset for culture growth rate analysis (input script1.Rmd).
+│   │   ├── culture_growth_dataset.csv         # Dataset for culture growth rate analysis (input script_1.Rmd).
 │   │   │                                      This file is semicolon-delimited and uses a comma as the decimal separator.
 │   │   │                                      Variables: IndID (measurement identification code);
 │   │   │                                      Ind (short name for each isolate);
@@ -52,7 +43,7 @@ FestucaEpichloeComparativeStudy/
 │   │   │                                      Diameter (diameter of the culture in mm)
 │   │   │                                      Species (holobiont idntification code).
 │   │   │ 
-│   │   ├── spores_dataset.csv                 # Morphometric data of asexual reproductive structures (input in script1.Rmd). 
+│   │   ├── spores_dataset.csv                 # Morphometric data of asexual reproductive structures (input in script_1.Rmd). 
 │   │   │                                      This file is semicolon-delimited and uses a comma as the decimal separator.
 │   │   │                                      Variables: Species (holobiont identification code);
 │   │   │                                      SampleID (measurement identification code); 
@@ -63,7 +54,7 @@ FestucaEpichloeComparativeStudy/
 │   │   │                                      conidiogW (conidiogenous cell basal width in μm); 
 │   │   │                                      conidA (conidial area in μm²). 
 │   │   │
-│   │   ├── alkaloids_qualitative.csv          # Dataset for qualitative detection, four alkaloid families (input script4.Rmd).
+│   │   ├── alkaloids_qualitative.csv          # Dataset for qualitative detection, four alkaloid families (input script_3.Rmd).
 │   │   │                                      Presence indicated with "YES", traces with "TRACES" and absence with "NO".
 │   │   │                                      Variables: Hostsp (holobiont identification code);
 │   │   │                                      SampleID (Individual identification code);
@@ -76,7 +67,7 @@ FestucaEpichloeComparativeStudy/
 │   │   │                                      E (Epichloë incidence in the individuals tested);
 │   │   │                                      Columns 4 to 6 correspond to compounds concentrations (units specified).
 │   │   │   
-│   │   ├── alkaloids_PCR.csv                  # PCR results for fungal genes in alkaloid synthesis (input script4.Rmd).
+│   │   ├── alkaloids_PCR.csv                  # PCR results for fungal genes in alkaloid synthesis (input script_3.Rmd).
 │   │   │                                      Presence indicated with "+" and absence indicated with "-".
 │   │   │                                      Variables: Hostsp (holobiont identification code);
 │   │   │                                      SampleID (Individual identification code);
