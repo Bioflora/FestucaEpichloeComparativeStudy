@@ -59,8 +59,8 @@ FestucaEpichloeComparativeStudy/
 │   │   │                                      Ind (short name for each isolate);   
 │   │   │                                      conidL (conidial length in μm);
 │   │   │                                      conidW (conidial width in μm); 
-│   │   │                                      conidiophL (conidiophore length in μm);
-│   │   │                                      conidiophW (conidiophore width in μm); 
+│   │   │                                      conidiogL (conidiogenous cell length in μm);
+│   │   │                                      conidiogW (conidiogenous cell basal width in μm); 
 │   │   │                                      conidA (conidial area in μm²). 
 │   │   │
 │   │   ├── alkaloids_qualitative.csv          # Dataset for qualitative detection, four alkaloid families (input script4.Rmd).
@@ -98,10 +98,9 @@ FestucaEpichloeComparativeStudy/
 │   │                                          pg/1C_ST (known genome size, standard);             
 │   │
 │   └── scripts/
-│       ├── script1.Rmd                       # RMarkdown: Morphological analysis of fungal endophyte.
-│       ├── script2.sh                        # Shell script: Phylogenetic inference using IQ-TREE2 and ASTRAL.
-│       ├── script3.Rmd                       # Rmarkdown: Visualization and editing of phylogenetic trees.
-│       └── script4.Rmd                       # RMarkdown: Generation of the alkaloids heatmap (raw figures).
+│       ├── script_1.Rmd                       # RMarkdown: Morphological analysis of fungal endophytes.
+│       ├── script_2.Rmd                       # Rmarkdown: Visualization and editing of phylogenetic trees (raw figures).
+│       └── script_3.Rmd                       # RMarkdown: Generation of the alkaloids heatmap (raw figures).
 └
 
 ```
