@@ -18,8 +18,8 @@ FestucaEpichloeComparativeStudy/
 │                                              nucleids_ST (number of particles counted, standard); 
 │                                              mean (arithmetic mean of the fluorescence intensities, sample); 
 │                                              mean_ST (arithmetic mean of the fluorescence intensities, standard);
-│                                              CV (coefficient of Variation, sample); 
-│                                              CV_ST (coefficient of Variation, standard);
+│                                              CV (coefficient of variation, sample); 
+│                                              CV_ST (coefficient of variation, standard);
 │                                              pg/2C (estimated genome size, sample); 
 │                                              pg/2C_ST (known genome size, standard);
 │
@@ -31,17 +31,17 @@ FestucaEpichloeComparativeStudy/
 │   │   ├── outputs_script_3/                  # Alkaloids heatmap, raw figures (from script3.Rmd)
 │   │   ├── Phylogenetic_analysis/
 │   │   │   │  
-│   │   │   ├── MSA/                           # Multiple sequence alignments (FASTA format)
-│   │   │   └── TREES/                         # Raw phylogenetic trees obtained from IQTREE and ASTRAL. 
+│   │   │   ├── MSA/                           # Multiple sequence alignments (FASTA format; input script_2.Rmd)
+│   │   │   └── TREES/                         # Raw phylogenetic trees obtained from IQTREE and ASTRAL (input script_2.Rmd)
 │   │   │   
 │   │   ├── culture_growth_dataset.csv         # Dataset for culture growth rate analysis (input script_1.Rmd).
 │   │   │                                      This file is semicolon-delimited and uses a comma as the decimal separator.
 │   │   │                                      Variables: IndID (measurement identification code);
 │   │   │                                      Ind (short name for each isolate);
 │   │   │                                      Rep (replicate code within each isolate);
-│   │   │                                      Day (Day the measurement was made);
+│   │   │                                      Day (day the measurement was made);
 │   │   │                                      Diameter (diameter of the culture in mm)
-│   │   │                                      Species (holobiont idntification code).
+│   │   │                                      Species (holobiont identification code).
 │   │   │ 
 │   │   ├── spores_dataset.csv                 # Morphometric data of asexual reproductive structures (input in script_1.Rmd). 
 │   │   │                                      This file is semicolon-delimited and uses a comma as the decimal separator.
@@ -83,8 +83,8 @@ FestucaEpichloeComparativeStudy/
 │   │                                          nucleids_ST (number of particles counted, standard); 
 │   │                                          mean (arithmetic mean of the fluorescence intensities, sample); 
 │   │                                          mean_ST (arithmetic mean of the fluorescence intensities, standard);
-│   │                                          CV (coefficient of Variation,sample); 
-│   │                                          CV_ST (coefficient of Variation, standard);
+│   │                                          CV (coefficient of variation,sample); 
+│   │                                          CV_ST (coefficient of variation, standard);
 │   │                                          pg/1C (estimated genome size, sample); 
 │   │                                          pg/1C_ST (known genome size, standard);             
 │   │
