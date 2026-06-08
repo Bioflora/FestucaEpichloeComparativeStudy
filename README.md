@@ -77,7 +77,7 @@ FestucaEpichloeComparativeStudy/
 │   │   │  
 │   │   └── flow_cytometry_endophyte.csv       # Genome size estimations of Epichloë festucae via flow cytometry.
 │   │                                          Variables: Holobiont_ID (holobiont identification code);
-│   │                                          Host_sp: (plant host specuiese identification code); 
+│   │                                          Host_sp: (plant host species identification code); 
 │   │                                          Measurement_ID (measurement identification code);
 │   │                                          nucleids (number of particles counted, sample); 
 │   │                                          nucleids_ST (number of particles counted, standard); 
