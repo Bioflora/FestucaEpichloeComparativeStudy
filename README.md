@@ -74,6 +74,7 @@ FestucaEpichloeComparativeStudy/
 │   │   │                                      E (Epichloë incidence in the individuals tested);
 │   │   │                                      Columns 4 to 9 correspond to the key fungal genes tested.
 │   │   │
+│   │   ├── panelC_cultures.tiff               # Raw panel C from Figure 2; uploaded by script_1.Rmd
 │   │   │  
 │   │   └── flow_cytometry_endophyte.csv       # Genome size estimations of Epichloë festucae via flow cytometry.
 │   │                                          Variables: Holobiont_ID (holobiont identification code);
@@ -90,8 +91,8 @@ FestucaEpichloeComparativeStudy/
 │   │
 │   └── scripts/
 │       ├── script_1.Rmd                       # RMarkdown: Morphological analysis of fungal endophytes.
-│       ├── script_2.Rmd                       # Rmarkdown: Visualization and editing of phylogenetic trees (raw figures).
-│       └── script_3.Rmd                       # RMarkdown: Generation of the alkaloids heatmap (raw figures).
+│       ├── script_2.Rmd                       # Rmarkdown: Visualization and editing of phylogenetic trees.
+│       └── script_3.Rmd                       # RMarkdown: Generation of the alkaloids heatmap figure.
 └
 
 ```
