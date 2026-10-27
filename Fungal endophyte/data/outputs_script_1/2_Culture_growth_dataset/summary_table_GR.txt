@@ -1,0 +1,8 @@
+Species	GR_mean_SE	CV
+Flamb	2.29 ± NA	NA
+Fyves	1.68 ± 0.25	25.5
+Ftrich	1.18 ± NA	NA
+Froth	1.73 ± 0.15	15.4
+Fnigr	1.98 ± 0.2	17.7
+Fprui	0.9 ± 0.09	16.9
+Farun	0.33 ± 0.03	14.7
